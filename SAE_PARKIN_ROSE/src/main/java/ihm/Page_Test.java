@@ -1,21 +1,22 @@
+
 package ihm;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class Page_Test2 extends JFrame {
+public class Page_Test extends JFrame {
     
     /**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public Page_Test2(String email, String nom, String prenom) {
+	public Page_Test(String email, String nom, String prenom) {
         initializeUI();
     }
     
     private void initializeUI() {
-        this.setTitle("TEST DE PAGE GARER EN VOIRIE");
+        this.setTitle("Test");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setSize(400, 200);
         this.setLocationRelativeTo(null);
