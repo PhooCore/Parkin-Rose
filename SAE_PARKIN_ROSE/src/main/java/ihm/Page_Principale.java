@@ -98,13 +98,16 @@ public class Page_Principale extends JFrame {
             }
         });
         
-        // Bouton de recherche
-        JButton btnSearch = new JButton("🔍");
-        btnSearch.setFont(new Font("Arial", Font.PLAIN, 16));
+        // Bouton de recherche avec icône loupe.png
+        JButton btnSearch = new JButton();
         btnSearch.setBackground(Color.WHITE);
         btnSearch.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
         btnSearch.setPreferredSize(new Dimension(50, 40));
         btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Charger l'icône loupe.png
+        JLabel lblLoupe = chargerIconeLabel("/images/loupe.png", 16, 16, "🔍");
+        btnSearch.add(lblLoupe);
         
         btnSearch.addActionListener(e -> {
             String recherche = searchField.getText().trim();
