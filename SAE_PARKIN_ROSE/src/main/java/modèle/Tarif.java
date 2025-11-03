@@ -23,7 +23,6 @@ public class Tarif {
         this.nomZone = idTarification.replace("TARIF_", "");
     }
 
-    // ==================== GETTERS ====================
 
     /**
      * @return l'identifiant de la tarification
@@ -52,8 +51,6 @@ public class Tarif {
     public String getNomZone() { 
         return nomZone; 
     }
-
-    // ==================== METHODES DE CALCUL ====================
 
     /**
      * Convertit la durée maximale en minutes pour faciliter les calculs
@@ -86,8 +83,6 @@ public class Tarif {
         // Calcul : durée en heures × tarif horaire
         return dureeHeures * tarifParHeure;
     }
-
-    // ==================== METHODE D'AFFICHAGE ====================
 
     /**
      * Génère un texte formaté pour l'affichage dans les listes déroulantes

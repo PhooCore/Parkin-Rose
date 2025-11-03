@@ -36,7 +36,6 @@ public class Usager {
      */
     public Usager() {}
 
-    // ==================== GETTERS ====================
 
     /**
      * @return l'identifiant unique de l'usager
@@ -73,7 +72,7 @@ public class Usager {
         return motDePasse; 
     }
 
-    // ==================== SETTERS ====================
+
 
     /**
      * @param idUsager l'identifiant unique à assigner à l'usager

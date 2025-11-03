@@ -143,6 +143,8 @@ public class PaiementDAO {
     
     /**
      * Méthode utilitaire pour convertir un ResultSet en objet Paiement
+     *Un ResultSet est un objet en Java qui représente le résultat d'une 
+     *requête SQL exécutée sur une base de données.
      */
     private static Paiement mapResultSetToPaiement(ResultSet rs) throws SQLException {
         Paiement paiement = new Paiement(
