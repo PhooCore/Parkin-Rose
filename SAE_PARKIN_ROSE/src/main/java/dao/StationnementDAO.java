@@ -75,7 +75,7 @@ public class StationnementDAO {
         try (Connection conn = MySQLConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setInt(1, idStationnement);
+            stmt.setInt(1, idStationnement);            
             
             int lignesmiseajour = stmt.executeUpdate();
             return lignesmiseajour > 0;

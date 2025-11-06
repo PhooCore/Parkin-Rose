@@ -49,6 +49,7 @@ public class Page_Paiement extends JFrame {
      * Constructeur principal pour tous les types de stationnements
      * @param idStationnement null pour nouveau stationnement, valeur pour stationnement existant
      * @param heureDepart nécessaire uniquement pour les stationnements parking
+     * @wbp.parser.constructor
      */
     public Page_Paiement(double montant, String emailUtilisateur, String typeVehicule, 
                         String plaqueImmatriculation, String zone, int dureeHeures, int dureeMinutes,
@@ -75,7 +76,7 @@ public class Page_Paiement extends JFrame {
         // Configuration de la fenêtre
         this.setTitle("Paiement du stationnement");
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Ne ferme que cette fenêtre
-        this.setSize(500, 500);
+        this.setSize(550, 650);
         this.setLocationRelativeTo(null); // Centre la fenêtre
         this.setResizable(false); // Taille fixe
         
@@ -118,29 +119,33 @@ public class Page_Paiement extends JFrame {
         // Champ nom sur la carte
         formPanel.add(new JLabel("Nom sur la carte:"));
         txtNomCarte = new JTextField();
+        txtNomCarte.setPreferredSize(new Dimension(300, 30)); // Taille plus grande
         formPanel.add(txtNomCarte);
         
         // Champ numéro de carte
         formPanel.add(new JLabel("Numéro de carte:"));
         txtNumeroCarte = new JTextField();
+        txtNumeroCarte.setPreferredSize(new Dimension(300, 30)); // Taille plus grande
         formPanel.add(txtNumeroCarte);
         
         // Panel pour date d'expiration et CVV côte à côte
-        JPanel panelDateCVV = new JPanel(new GridLayout(1, 2, 10, 10));
+        JPanel panelDateCVV = new JPanel(new GridLayout(1, 2, 15, 10)); // Plus d'espace entre les champs
         panelDateCVV.setBackground(Color.WHITE);
         
-        // Sous-panel date d'expiration
+        // Sous-panel date d'expiration - PLUS LARGE
         JPanel panelDate = new JPanel(new BorderLayout());
         panelDate.setBackground(Color.WHITE);
         panelDate.add(new JLabel("Date expiration (MM/AA):"), BorderLayout.NORTH);
         txtDateExpiration = new JTextField();
+        txtDateExpiration.setPreferredSize(new Dimension(120, 30)); // Champ plus large
         panelDate.add(txtDateExpiration, BorderLayout.CENTER);
         
-        // Sous-panel CVV
+        // Sous-panel CVV - PLUS LARGE
         JPanel panelCVV = new JPanel(new BorderLayout());
         panelCVV.setBackground(Color.WHITE);
         panelCVV.add(new JLabel("CVV:"), BorderLayout.NORTH);
         txtCVV = new JTextField();
+        txtCVV.setPreferredSize(new Dimension(80, 30)); // Champ plus large
         panelCVV.add(txtCVV, BorderLayout.CENTER);
         
         // Assemblage des sous-panels
