@@ -119,23 +119,27 @@ public class Zone {
     }
 
     /**
-     * Zone Rouge - Tarif avec majoration
+     * Zone Rouge - 30 minutes gratuites par demi-journée
      */
     private double calculerCoutRouge(int dureeMinutes) {
-        // 30 minutes gratuites par demi-journée
-        int minutesPayantes = Math.max(0, dureeMinutes - 30);
+        // 30 minutes gratuites
+        if (dureeMinutes <= 30) {
+            return 0.00;
+        }
         
-        if (minutesPayantes <= 60) { // 1h payante
+        // Au-delà de 30 minutes, on calcule sur la durée payante
+        int minutesPayantes = dureeMinutes - 30;
+        
+        if (minutesPayantes <= 60) { // 1h payante (soit 1h30 au total)
             return 1.00;
-        } else if (minutesPayantes <= 120) { // 2h payantes
+        } else if (minutesPayantes <= 120) { // 2h payantes (soit 2h30 au total)
             return 2.00;
-        } else if (minutesPayantes <= 180) { // 3h payantes
+        } else if (minutesPayantes <= 150) { // 2h30 payantes (soit 3h au total)
             return 2.00 + 30.00; // Majoration 30€
         } else {
             return 2.00 + 30.00; // Majoration maintenue
         }
     }
-
     /**
      * Calcul normal pour les autres zones
      */

@@ -69,13 +69,23 @@ public class PaiementTest {
     @Test
     public void testGenerationIdPaiement() {
         Paiement paiement1 = new Paiement("Test1", "1111", "111", 10.0, 1);
+        
+        try {
+            Thread.sleep(10); 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
         Paiement paiement2 = new Paiement("Test2", "2222", "222", 20.0, 2);
         
         assertNotNull(paiement1.getIdPaiement());
         assertNotNull(paiement2.getIdPaiement());
-        assertTrue(paiement1.getIdPaiement().startsWith("PAY_"));
-        assertTrue(paiement2.getIdPaiement().startsWith("PAY_"));
-        // Les IDs devraient être différents
-        assertNotEquals(paiement1.getIdPaiement(), paiement2.getIdPaiement());
+        assertTrue("L'ID du premier paiement doit commencer par PAY_", 
+                   paiement1.getIdPaiement().startsWith("PAY_"));
+        assertTrue("L'ID du deuxième paiement doit commencer par PAY_", 
+                   paiement2.getIdPaiement().startsWith("PAY_"));
+        
+        assertNotEquals("Les IDs de paiement doivent être différents car ils sont générés à des moments différents", 
+                       paiement1.getIdPaiement(), paiement2.getIdPaiement());
     }
 }
