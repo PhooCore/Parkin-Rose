@@ -176,17 +176,40 @@ public class Page_Garer_Parking extends JFrame {
         contentPanel.add(panelBoutons, BorderLayout.SOUTH);
     }
     
-    /**
-     * Ouvre une boîte de dialogue pour modifier la plaque d'immatriculation
-     */
     private void modifierPlaque() {
         String nouvellePlaque = JOptionPane.showInputDialog(this, 
-            "Entrez la plaque d'immatriculation:", 
+            "Entrez la plaque d'immatriculation (format: AA-123-AA):", 
             lblPlaque.getText());
         
         if (nouvellePlaque != null && !nouvellePlaque.trim().isEmpty()) {
-            lblPlaque.setText(nouvellePlaque.trim());
+            String plaqueNettoyee = nouvellePlaque.trim().toUpperCase();
+            
+            // Validation du format de plaque (AA-123-AA)
+            if (!validerFormatPlaque(plaqueNettoyee)) {
+                JOptionPane.showMessageDialog(this,
+                    "Format de plaque invalide !\nLe format doit être: AA-123-AA\nExemple: AB-123-CD",
+                    "Erreur de format",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            lblPlaque.setText(plaqueNettoyee);
         }
+    }
+
+    /**
+     * Valide le format de plaque d'immatriculation (AA-123-AA)
+     * @param plaque la plaque à valider
+     * @return true si le format est correct
+     */
+    private boolean validerFormatPlaque(String plaque) {
+        if (plaque == null || plaque.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Format: 2 lettres - 3 chiffres - 2 lettres
+        // Exemple: AB-123-CD
+        return plaque.matches("[A-Z]{2}-\\d{3}-[A-Z]{2}");
     }
 
     /**

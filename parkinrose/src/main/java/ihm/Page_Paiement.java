@@ -262,15 +262,23 @@ public class Page_Paiement extends JFrame {
         
         // Validation du numéro de carte (16 chiffres)
         String numeroCarte = txtNumeroCarte.getText().trim().replaceAll("\\s+", "");
-        if (numeroCarte.isEmpty() || numeroCarte.length() < 16) {
+        if (numeroCarte.isEmpty() || !numeroCarte.matches("\\d{16}")) {
             JOptionPane.showMessageDialog(this, "Numéro de carte invalide (16 chiffres requis)", "Erreur", JOptionPane.ERROR_MESSAGE);
             txtNumeroCarte.requestFocus();
             return false;
         }
         
-        // Validation de la date d'expiration
-        if (txtDateExpiration.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Veuillez saisir la date d'expiration", "Erreur", JOptionPane.ERROR_MESSAGE);
+        // Validation de la date d'expiration (format MM/AA et pas expirée)
+        String dateExpiration = txtDateExpiration.getText().trim();
+        if (dateExpiration.isEmpty() || !dateExpiration.matches("\\d{2}/\\d{2}")) {
+            JOptionPane.showMessageDialog(this, "Format de date invalide (MM/AA requis)", "Erreur", JOptionPane.ERROR_MESSAGE);
+            txtDateExpiration.requestFocus();
+            return false;
+        }
+        
+        // Vérifier que la date n'est pas expirée
+        if (!estDateValide(dateExpiration)) {
+            JOptionPane.showMessageDialog(this, "La carte est expirée", "Erreur", JOptionPane.ERROR_MESSAGE);
             txtDateExpiration.requestFocus();
             return false;
         }
@@ -282,9 +290,48 @@ public class Page_Paiement extends JFrame {
             txtCVV.requestFocus();
             return false;
         }
-        
         return true;
     }
+
+    /**
+     * Vérifie si la date d'expiration de la carte n'est pas dépassée
+     * @param dateExpiration format "MM/AA"
+     * @return true si la date est valide (dans le futur), false si expirée
+     */
+    private boolean estDateValide(String dateExpiration) {
+        try {
+            // Séparer le mois et l'année
+            String[] parties = dateExpiration.split("/");
+            int mois = Integer.parseInt(parties[0]);
+            int annee = Integer.parseInt(parties[1]);
+            
+            // Validation du mois (1-12)
+            if (mois < 1 || mois > 12) {
+                return false;
+            }
+            
+            // Ajouter 2000 pour avoir l'année complète (20AA)
+            annee += 2000;
+            
+            // Obtenir la date actuelle
+            LocalDateTime maintenant = LocalDateTime.now();
+            int anneeActuelle = maintenant.getYear();
+            int moisActuel = maintenant.getMonthValue();
+            
+            // Vérifier si la date est dans le futur
+            if (annee > anneeActuelle) {
+                return true; // Année future
+            } else if (annee == anneeActuelle && mois >= moisActuel) {
+                return true; // Même année mais mois futur ou courant
+            } else {
+                return false; // Date expirée
+            }
+            
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     
     public static void main(String[] args) {
         java.awt.EventQueue.invokeLater(new Runnable() {

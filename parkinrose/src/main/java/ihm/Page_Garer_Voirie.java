@@ -164,12 +164,38 @@ public class Page_Garer_Voirie extends JFrame {
     
     private void modifierPlaque() {
         String nouvellePlaque = JOptionPane.showInputDialog(this, 
-            "Entrez la plaque d'immatriculation:", 
+            "Entrez la plaque d'immatriculation (format: AA-123-AA):", 
             lblPlaque.getText());
         
         if (nouvellePlaque != null && !nouvellePlaque.trim().isEmpty()) {
-            lblPlaque.setText(nouvellePlaque.trim());
+            String plaqueNettoyee = nouvellePlaque.trim().toUpperCase();
+            
+            // Validation du format de plaque (AA-123-AA)
+            if (!validerFormatPlaque(plaqueNettoyee)) {
+                JOptionPane.showMessageDialog(this,
+                    "Format de plaque invalide !\nLe format doit être: AA-123-AA\nExemple: AB-123-CD",
+                    "Erreur de format",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            lblPlaque.setText(plaqueNettoyee);
         }
+    }
+
+    /**
+     * Valide le format de plaque d'immatriculation (AA-123-AA)
+     * @param plaque la plaque à valider
+     * @return true si le format est correct
+     */
+    private boolean validerFormatPlaque(String plaque) {
+        if (plaque == null || plaque.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Format: 2 lettres - 3 chiffres - 2 lettres
+        // Exemple: AB-123-CD
+        return plaque.matches("[A-Z]{2}-\\d{3}-[A-Z]{2}");
     }
 
     private void initialiseDonnees() {
@@ -260,6 +286,25 @@ public class Page_Garer_Voirie extends JFrame {
         }
     }
     private void afficherConfirmation() {
+        // Validation de la plaque d'immatriculation
+        String plaque = lblPlaque.getText();
+        if (plaque.equals("Non définie") || plaque.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Veuillez définir une plaque d'immatriculation",
+                "Plaque manquante",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Validation du format de plaque
+        if (!validerFormatPlaque(plaque)) {
+            JOptionPane.showMessageDialog(this,
+                "Format de plaque invalide !\nLe format doit être: AA-123-AA\nExemple: AB-123-CD\n\nVeuillez modifier la plaque avant de continuer.",
+                "Format de plaque incorrect",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         int index = comboZone.getSelectedIndex();
         String idZone = "";
         String nomZone = "";
@@ -310,6 +355,7 @@ public class Page_Garer_Voirie extends JFrame {
             dispose();
         }
     }
+    
     
     private String getTypeVehicule() {
         if (radioVoiture.isSelected()) return "Voiture";

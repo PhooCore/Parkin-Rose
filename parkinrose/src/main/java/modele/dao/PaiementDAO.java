@@ -49,6 +49,27 @@ public class PaiementDAO {
     }
     
     /**
+     * Supprime un paiement de la base de données (pour rollback)
+     */
+    public static boolean supprimerPaiement(String idPaiement) {
+        String sql = "DELETE FROM paiement WHERE id_paiement = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, idPaiement);
+            
+            int lignesSupprimees = stmt.executeUpdate();
+            return lignesSupprimees > 0;
+            
+        } catch (SQLException e) {
+            logger.severe("Erreur lors de la suppression du paiement: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
      * Crée un stationnement après un paiement réussi (pour voirie)
      */
     public static boolean creerStationnementApresPaiement(int idUsager, String typeVehicule, 
@@ -144,8 +165,6 @@ public class PaiementDAO {
     
     /**
      * Méthode utilitaire pour convertir un ResultSet en objet Paiement
-     *Un ResultSet est un objet en Java qui représente le résultat d'une 
-     *requête SQL exécutée sur une base de données.
      */
     private static Paiement mapResultSetToPaiement(ResultSet rs) throws SQLException {
         Paiement paiement = new Paiement(
