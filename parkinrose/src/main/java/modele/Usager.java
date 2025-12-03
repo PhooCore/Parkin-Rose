@@ -1,6 +1,5 @@
 package modele;
 
-import java.time.LocalDateTime;
 
 /**
  * Classe représentant un usager dans le système.
@@ -12,7 +11,6 @@ public class Usager {
     private String prenomUsager;
     private String mailUsager;
     private String motDePasse;
-    private LocalDateTime dateInscription;
     private boolean isAdmin;
 
     /**

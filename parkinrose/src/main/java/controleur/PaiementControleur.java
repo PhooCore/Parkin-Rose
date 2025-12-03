@@ -4,15 +4,12 @@ import modele.Paiement;
 import modele.Usager;
 import modele.dao.PaiementDAO;
 import modele.dao.StationnementDAO;
-import modele.dao.TarifParkingDAO;
 import modele.dao.UsagerDAO;
 import ihm.Page_Paiement;
 import ihm.Page_Principale;
 import javax.swing.JOptionPane;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 public class PaiementControleur {
     

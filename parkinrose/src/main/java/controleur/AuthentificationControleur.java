@@ -1,8 +1,6 @@
 package controleur;
 
-import modele.Usager;
 import modele.dao.AuthentificationDAO;
-import modele.dao.UsagerDAO;
 import ihm.Page_Authentification;
 import ihm.Page_Principale;
 import ihm.Page_Inscription;
