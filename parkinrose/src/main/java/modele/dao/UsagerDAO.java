@@ -94,7 +94,6 @@ public class UsagerDAO {
             PreparedStatement stmt = conn.prepareStatement(sql)
         ) {
             stmt.setString(1, email); // 1er ? : email de l'utilisateur recherché
-            System.out.println("Recherche usager avec email: " + email); // Debug
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
