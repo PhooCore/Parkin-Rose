@@ -36,12 +36,26 @@ public class Page_Utilisateur extends JFrame {
     /**
      * Constructeur de la page utilisateur
      * @param email l'email de l'utilisateur connecté
+     * @param rafraichir si true, rafraîchit les données depuis la base
      */
-    public Page_Utilisateur(String email) {
+    public Page_Utilisateur(String email, boolean rafraichir) {
         this.emailUtilisateur = email;
-        this.usager = UsagerDAO.getUsagerByEmail(email);
+        if (rafraichir) {
+            // Forcer le rafraîchissement des données depuis la base
+            this.usager = UsagerDAO.getUsagerByEmail(email);
+        } else {
+            this.usager = UsagerDAO.getUsagerByEmail(email);
+        }
         this.controleur = new UtilisateurControleur(email);
         initialisePage();
+    }
+    
+    /**
+     * Constructeur par défaut (pour compatibilité)
+     * @param email l'email de l'utilisateur connecté
+     */
+    public Page_Utilisateur(String email) {
+        this(email, false);
     }
     
     /**
@@ -74,7 +88,7 @@ public class Page_Utilisateur extends JFrame {
         JPanel panelInfos = creerOngletInfos();
         onglets.addTab("Informations", panelInfos);
         
-        // Onglet 2 : Mon Abonnement (NOUVEL ONGLET AJOUTÉ)
+        // Onglet 2 : Mon Abonnement
         JPanel panelAbonnement = creerOngletAbonnement();
         onglets.addTab("Mon Abonnement", panelAbonnement);
         
@@ -100,10 +114,6 @@ public class Page_Utilisateur extends JFrame {
      * Crée l'onglet des informations personnelles
      * @return JPanel configuré pour l'onglet Informations
      */
-    /**
-     * Crée l'onglet des informations personnelles
-     * @return JPanel configuré pour l'onglet Informations
-     */
     private JPanel creerOngletInfos() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS)); 
@@ -115,29 +125,30 @@ public class Page_Utilisateur extends JFrame {
         ajouterLigneInfo(panel, "Prénom:", usager.getPrenomUsager());
         ajouterLigneInfo(panel, "Email:", usager.getMailUsager());
         
-        panel.add(Box.createVerticalStrut(20));
+        panel.add(Box.createVerticalStrut(20)); 
         
-        // === NOUVEAU : SECTION ABONNEMENT DANS L'ONGLET INFORMATIONS ===
-        JPanel panelAbonnementInfo = new JPanel(new BorderLayout());
-        panelAbonnementInfo.setBackground(new Color(245, 245, 245));
-        panelAbonnementInfo.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204), 2),
-            "Statut de l'abonnement"
-        ));
-        
-        // Récupérer l'abonnement actuel
+        // ========== SECTION ABONNEMENT ==========
+        // Récupérer TOUJOURS les données fraîches depuis la base
         List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
         
+        JLabel lblTitreAbonnement = new JLabel("Statut Abonnement:");
+        lblTitreAbonnement.setFont(new Font("Arial", Font.BOLD, 14));
+        lblTitreAbonnement.setForeground(new Color(0, 102, 204));
+        lblTitreAbonnement.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(lblTitreAbonnement);
+        
         JLabel lblStatutAbonnement = new JLabel();
-        lblStatutAbonnement.setFont(new Font("Arial", Font.BOLD, 14));
-        lblStatutAbonnement.setHorizontalAlignment(SwingConstants.CENTER);
+        lblStatutAbonnement.setFont(new Font("Arial", Font.PLAIN, 14));
+        lblStatutAbonnement.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblStatutAbonnement.setBorder(BorderFactory.createEmptyBorder(5, 20, 20, 0));
         
         JButton btnActionAbonnement = new JButton();
-        btnActionAbonnement.setFont(new Font("Arial", Font.PLAIN, 12));
+        btnActionAbonnement.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnActionAbonnement.setMaximumSize(new Dimension(250, 30));
         
-        if (abonnements.isEmpty()) {
+        if (abonnements == null || abonnements.isEmpty()) {
             // Pas d'abonnement actif
-            lblStatutAbonnement.setText("Aucun abonnement actif");
+            lblStatutAbonnement.setText("Non actif");
             lblStatutAbonnement.setForeground(Color.RED);
             
             btnActionAbonnement.setText("Souscrire à un abonnement");
@@ -151,24 +162,26 @@ public class Page_Utilisateur extends JFrame {
         } else {
             // Afficher l'abonnement actif
             Abonnement abonnementActuel = abonnements.get(0);
-            lblStatutAbonnement.setText("Abonnement actif : " + abonnementActuel.getLibelleAbonnement());
+            lblStatutAbonnement.setText("Actif - " + abonnementActuel.getLibelleAbonnement());
             lblStatutAbonnement.setForeground(new Color(0, 150, 0));
             
-            btnActionAbonnement.setText("Gérer mon abonnement");
+            btnActionAbonnement.setText("Voir les détails");
             btnActionAbonnement.setBackground(new Color(255, 153, 0));
             btnActionAbonnement.setForeground(Color.WHITE);
             btnActionAbonnement.addActionListener(e -> {
                 // Basculer sur l'onglet "Mon Abonnement"
-                JTabbedPane parent = (JTabbedPane) panel.getParent().getParent().getParent();
-                parent.setSelectedIndex(1); // Index de l'onglet "Mon Abonnement"
+                JTabbedPane parentTabbedPane = (JTabbedPane) SwingUtilities.getAncestorOfClass(JTabbedPane.class, panel);
+                if (parentTabbedPane != null) {
+                    parentTabbedPane.setSelectedIndex(1); // Index 1 pour "Mon Abonnement"
+                }
             });
         }
         
-        panelAbonnementInfo.add(lblStatutAbonnement, BorderLayout.CENTER);
-        panelAbonnementInfo.add(btnActionAbonnement, BorderLayout.SOUTH);
-        
-        panel.add(panelAbonnementInfo);
-        panel.add(Box.createVerticalStrut(30));
+        panel.add(lblStatutAbonnement);
+        panel.add(Box.createVerticalStrut(5));
+        panel.add(btnActionAbonnement);
+        panel.add(Box.createVerticalStrut(30)); 
+        // ========== FIN SECTION ABONNEMENT ==========
         
         // === BOUTONS D'ACTION ===
         JButton btnModifierMdp = new JButton("Modifier le mot de passe");
@@ -196,7 +209,7 @@ public class Page_Utilisateur extends JFrame {
     }
     
     /**
-     * NOUVELLE MÉTHODE : Crée l'onglet pour gérer l'abonnement de l'utilisateur
+     * Crée l'onglet pour gérer l'abonnement de l'utilisateur
      * @return JPanel configuré pour l'onglet Abonnement
      */
     private JPanel creerOngletAbonnement() {
@@ -204,10 +217,10 @@ public class Page_Utilisateur extends JFrame {
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        // Récupérer l'abonnement actuel de l'utilisateur
+        // Récupérer TOUJOURS les données fraîches depuis la base
         List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
         
-        if (abonnements.isEmpty()) {
+        if (abonnements == null || abonnements.isEmpty()) {
             // Afficher un message si aucun abonnement
             JPanel panelSansAbonnement = new JPanel(new BorderLayout());
             panelSansAbonnement.setBackground(Color.WHITE);
@@ -239,7 +252,7 @@ public class Page_Utilisateur extends JFrame {
             // Afficher les détails de l'abonnement actuel
             Abonnement abonnementActuel = abonnements.get(0);
             
-            // ========== NOUVEAU : BOUTON RAFRAÎCHIR ==========
+            // Bouton Rafraîchir
             JPanel panelHaut = new JPanel(new BorderLayout());
             panelHaut.setBackground(Color.WHITE);
             
@@ -247,14 +260,13 @@ public class Page_Utilisateur extends JFrame {
             btnRafraichir.setFont(new Font("Arial", Font.PLAIN, 12));
             btnRafraichir.setBackground(new Color(200, 200, 200));
             btnRafraichir.addActionListener(e -> {
-                // Rafraîchir la page après un paiement
+                // Rafraîchir la page
                 dispose();
-                Page_Utilisateur nouvellePage = new Page_Utilisateur(emailUtilisateur);
+                Page_Utilisateur nouvellePage = new Page_Utilisateur(emailUtilisateur, true);
                 nouvellePage.setVisible(true);
             });
             panelHaut.add(btnRafraichir, BorderLayout.EAST);
             panel.add(panelHaut, BorderLayout.NORTH);
-            // ========== FIN BOUTON RAFRAÎCHIR ==========
             
             JPanel panelDetails = new JPanel();
             panelDetails.setLayout(new BoxLayout(panelDetails, BoxLayout.Y_AXIS));
@@ -288,11 +300,13 @@ public class Page_Utilisateur extends JFrame {
             panelInfo.add(lblPrix);
             
             panelInfo.add(new JLabel("Date de souscription:"));
-            // Note: Vous devrez ajouter un champ date_debut dans la table Appartenir
-            panelInfo.add(new JLabel("01/01/2024")); // À remplacer par la date réelle
+            // Récupérer la date depuis la base (à implémenter dans AbonnementDAO)
+            String dateSouscription = "01/01/2024"; // À remplacer par la date réelle
+            panelInfo.add(new JLabel(dateSouscription));
             
             panelInfo.add(new JLabel("Prochain renouvellement:"));
-            panelInfo.add(new JLabel("01/02/2024")); // À remplacer par la date réelle
+            String dateRenouvellement = "01/02/2024"; // À remplacer par la date réelle
+            panelInfo.add(new JLabel(dateRenouvellement));
             
             panelDetails.add(panelInfo);
             
@@ -339,11 +353,23 @@ public class Page_Utilisateur extends JFrame {
                     JOptionPane.WARNING_MESSAGE);
                     
                 if (confirmation == JOptionPane.YES_OPTION) {
-                    JOptionPane.showMessageDialog(this,
-                        "Votre demande de résiliation a été enregistrée.\n" +
-                        "Votre abonnement sera actif jusqu'à la fin de la période en cours.",
-                        "Demande enregistrée",
-                        JOptionPane.INFORMATION_MESSAGE);
+                    // Supprimer l'abonnement de la base
+                    if (AbonnementDAO.supprimerAbonnementsUtilisateur(usager.getIdUsager())) {
+                        JOptionPane.showMessageDialog(this,
+                            "Votre abonnement a été résilié avec succès.",
+                            "Résiliation confirmée",
+                            JOptionPane.INFORMATION_MESSAGE);
+                        
+                        // Rafraîchir la page
+                        dispose();
+                        Page_Utilisateur nouvellePage = new Page_Utilisateur(emailUtilisateur, true);
+                        nouvellePage.setVisible(true);
+                    } else {
+                        JOptionPane.showMessageDialog(this,
+                            "Une erreur est survenue lors de la résiliation.",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
             
@@ -356,63 +382,6 @@ public class Page_Utilisateur extends JFrame {
     }
     
     /**
-     * NOUVELLE MÉTHODE : Ouvre la page des abonnements disponibles
-     */
-    private void ouvrirPageAbonnements() {
-        Page_Abonnements pageAbonnements = new Page_Abonnements(emailUtilisateur);
-        pageAbonnements.setVisible(true);
-        dispose();
-    }
-    
-    /**
-     * NOUVELLE MÉTHODE : Demande de résiliation d'abonnement
-     */
-    private void demanderResiliation() {
-        int confirmation = JOptionPane.showConfirmDialog(this,
-            "Êtes-vous sûr de vouloir résilier votre abonnement ?\n" +
-            "Cette action sera effective à la fin de la période en cours.",
-            "Résiliation",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE);
-            
-        if (confirmation == JOptionPane.YES_OPTION) {
-            JOptionPane.showMessageDialog(this,
-                "Votre demande de résiliation a été enregistrée.\n" +
-                "Votre abonnement sera actif jusqu'à la fin de la période en cours.",
-                "Demande enregistrée",
-                JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
-    
-    /**
-     * NOUVELLE MÉTHODE : Retourne les avantages selon le type d'abonnement
-     */
-    private String getAvantagesByType(String idAbonnement) {
-        switch(idAbonnement.toUpperCase()) {
-            case "ABN_BASIC":
-                return "• Stationnement illimité en voirie (2h max)\n" +
-                       "• 10% de réduction dans les parkings partenaires\n" +
-                       "• Accès aux zones bleues";
-            case "ABN_PREMIUM":
-                return "• Stationnement illimité en voirie\n" +
-                       "• 25% de réduction dans les parkings partenaires\n" +
-                       "• Accès à toutes les zones\n" +
-                       "• Réservation prioritaire";
-            case "ABN_ETUDIANT":
-                return "• 50% de réduction sur tous les stationnements\n" +
-                       "• Accès aux zones universitaires\n" +
-                       "• Valable uniquement avec carte étudiante";
-            case "ABN_SENIOR":
-                return "• 40% de réduction sur tous les stationnements\n" +
-                       "• Accès aux zones résidentielles\n" +
-                       "• Pour les 65 ans et plus";
-            default:
-                return "• Avantages personnalisés\n" +
-                       "• Contactez-nous pour plus d'informations";
-        }
-    }
-    
-    /**
      * Crée l'onglet de l'historique des paiements
      * @return JPanel configuré pour l'onglet Historique des paiements
      */
@@ -420,7 +389,7 @@ public class Page_Utilisateur extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         
-        // === RÉCUPÉRATION DES DONNÉES RÉELLES ===
+        // === RÉCUPÉRATION DES DONNÉES RÉELLES (toujours fraîches) ===
         // Récupère tous les paiements de l'utilisateur depuis la base de données
         List<Paiement> paiements = PaiementDAO.getPaiementsByUsager(usager.getIdUsager());
         
@@ -436,7 +405,7 @@ public class Page_Utilisateur extends JFrame {
             // Formatage des données pour chaque colonne
             donnees[i][0] = p.getDatePaiement().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
             donnees[i][1] = String.format("%.2f €", p.getMontant());
-            donnees[i][2] = "Stationnement"; // Type fixe pour l'instant
+            donnees[i][2] = p.getTypePaiement();
             donnees[i][3] = "Payé"; // Statut fixe pour l'instant
             donnees[i][4] = p.getIdPaiement();
             totalDepense += p.getMontant(); // Calcul du total dépensé
@@ -484,7 +453,7 @@ public class Page_Utilisateur extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         
-        // Récupération de l'historique des stationnements
+        // Récupération de l'historique des stationnements (toujours frais)
         List<Stationnement> stationnements = StationnementDAO.getHistoriqueStationnements(usager.getIdUsager());
         
         // En-têtes des colonnes du tableau
@@ -628,31 +597,31 @@ public class Page_Utilisateur extends JFrame {
     }
     
     /**
-     * Ouvre la page de modification de mot de passe
+     * Retourne les avantages selon le type d'abonnement
      */
-    private void modifierMotDePasse() {
-        Page_Modif_MDP pageModifMdp = new Page_Modif_MDP();
-        pageModifMdp.setVisible(true);
-        this.dispose(); // Ferme la page actuelle
-    }
-    
-    /**
-     * Gère la déconnexion de l'utilisateur
-     * Demande confirmation puis retourne à la page d'authentification
-     */
-    private void deconnexion() {
-        int confirmation = JOptionPane.showConfirmDialog(this,
-            "Êtes-vous sûr de vouloir vous déconnecter ?",
-            "Déconnexion",
-            JOptionPane.YES_NO_OPTION);
-            
-        if (confirmation == JOptionPane.YES_OPTION) {
-            // Retour à la page de connexion
-            Page_Authentification authPage = new Page_Authentification();
-            authPage.setVisible(true);
-            dispose(); // Ferme la page actuelle
+    private String getAvantagesByType(String idAbonnement) {
+        switch(idAbonnement.toUpperCase()) {
+            case "ABN_BASIC":
+                return "• Stationnement illimité en voirie (2h max)\n" +
+                       "• 10% de réduction dans les parkings partenaires\n" +
+                       "• Accès aux zones bleues";
+            case "ABN_PREMIUM":
+                return "• Stationnement illimité en voirie\n" +
+                       "• 25% de réduction dans les parkings partenaires\n" +
+                       "• Accès à toutes les zones\n" +
+                       "• Réservation prioritaire";
+            case "ABN_ETUDIANT":
+                return "• 50% de réduction sur tous les stationnements\n" +
+                       "• Accès aux zones universitaires\n" +
+                       "• Valable uniquement avec carte étudiante";
+            case "ABN_SENIOR":
+                return "• 40% de réduction sur tous les stationnements\n" +
+                       "• Accès aux zones résidentielles\n" +
+                       "• Pour les 65 ans et plus";
+            default:
+                return "• Avantages personnalisés\n" +
+                       "• Contactez-nous pour plus d'informations";
         }
-        // Si NON, ne rien faire (reste sur la page)
     }
     
     /**
@@ -662,17 +631,6 @@ public class Page_Utilisateur extends JFrame {
         Page_Principale pagePrincipale = new Page_Principale(emailUtilisateur);
         pagePrincipale.setVisible(true);
         dispose(); // Ferme la page actuelle
-    }
-    
-    /**
-     * Rafraîchit l'affichage de l'abonnement dans l'onglet Informations
-     */
-    private void rafraichirAffichageAbonnement() {
-        // Cette méthode serait appelée après un paiement réussi
-        // Pour l'instant, on recrée simplement la page
-        dispose();
-        Page_Utilisateur nouvellePage = new Page_Utilisateur(emailUtilisateur);
-        nouvellePage.setVisible(true);
     }
     
     /**
