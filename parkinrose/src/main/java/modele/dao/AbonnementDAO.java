@@ -275,4 +275,123 @@ public class AbonnementDAO {
         }
         return false;
     }
+    
+    /**
+     * Ajoute un nouvel abonnement (pour l'admin)
+     * @param abonnement L'abonnement à ajouter
+     * @return true si l'insertion a réussi, false sinon
+     */
+    public static boolean insert(Abonnement abonnement) {
+        String sql = "INSERT INTO Abonnement (id_abonnement, libelle_abonnement, tarif_applique) VALUES (?, ?, ?)";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, abonnement.getIdAbonnement());
+            pstmt.setString(2, abonnement.getLibelleAbonnement());
+            pstmt.setDouble(3, abonnement.getTarifAbonnement());
+            
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Met à jour un abonnement existant (pour l'admin)
+     * @param abonnement L'abonnement à mettre à jour
+     * @return true si la mise à jour a réussi, false sinon
+     */
+    public static boolean update(Abonnement abonnement) {
+        String sql = "UPDATE Abonnement SET libelle_abonnement = ?, tarif_applique = ? WHERE id_abonnement = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, abonnement.getLibelleAbonnement());
+            pstmt.setDouble(2, abonnement.getTarifAbonnement());
+            pstmt.setString(3, abonnement.getIdAbonnement());
+            
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Supprime un abonnement (pour l'admin)
+     * @param idAbonnement ID de l'abonnement à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
+    public static boolean delete(String idAbonnement) {
+        // D'abord supprimer les relations dans Appartenir
+        String sqlDeleteAppartenir = "DELETE FROM Appartenir WHERE id_abonnement = ?";
+        String sqlDeleteAbonnement = "DELETE FROM Abonnement WHERE id_abonnement = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection()) {
+            conn.setAutoCommit(false); // Début de la transaction
+            
+            try (PreparedStatement pstmt1 = conn.prepareStatement(sqlDeleteAppartenir);
+                 PreparedStatement pstmt2 = conn.prepareStatement(sqlDeleteAbonnement)) {
+                
+                // Supprimer les relations
+                pstmt1.setString(1, idAbonnement);
+                pstmt1.executeUpdate();
+                
+                // Supprimer l'abonnement
+                pstmt2.setString(1, idAbonnement);
+                int rowsAffected = pstmt2.executeUpdate();
+                
+                conn.commit(); // Valider la transaction
+                return rowsAffected > 0;
+                
+            } catch (SQLException e) {
+                conn.rollback(); // Annuler la transaction en cas d'erreur
+                throw e;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Récupère les abonnements par type (filtrage)
+     * @param type Type d'abonnement (facultatif)
+     * @return Liste d'abonnements filtrés
+     */
+    public static List<Abonnement> getAbonnementsByType(String type) {
+        List<Abonnement> abonnements = new ArrayList<>();
+        String sql = "SELECT * FROM Abonnement WHERE 1=1";
+        
+        if (type != null && !type.isEmpty()) {
+            sql += " AND id_abonnement LIKE ?";
+        }
+        sql += " ORDER BY tarif_applique";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            if (type != null && !type.isEmpty()) {
+                pstmt.setString(1, type + "%");
+            }
+            
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                Abonnement abonnement = new Abonnement();
+                abonnement.setIdAbonnement(rs.getString("id_abonnement"));
+                abonnement.setLibelleAbonnement(rs.getString("libelle_abonnement"));
+                abonnement.setTarifAbonnement(rs.getDouble("tarif_applique"));
+                abonnements.add(abonnement);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return abonnements;
+    }
 }

@@ -1,33 +1,4 @@
-package ihm;
-
-import javax.swing.*;
-import controleur.PaiementControleur;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.time.LocalDateTime;
-import modele.Usager;
-import modele.dao.UsagerDAO;
-
-public class Page_Paiement extends JFrame {
-    
-    private static final long serialVersionUID = 1L;
-    
-    private double montant;
-    private String emailUtilisateur;
-    private Usager usager;
-    private String typeVehicule;
-    private String plaqueImmatriculation;
-    private String idZone;
-    private String nomZone;
-    private int dureeHeures;
-    private int dureeMinutes;
-    private Integer idStationnement;
-    private LocalDateTime heureDepart;
-    private PaiementControleur controleur;
-    
-    private JTextField txtNomCarte;
-    private JTextField txtNumeroCarte;
+@ -31,16 +31,10 @@ public class Page_Paiement extends JFrame {
     private JTextField txtDateExpiration;
     private JTextField txtCVV;
     
@@ -38,9 +9,7 @@ public class Page_Paiement extends JFrame {
         this.montant = montant;
         this.emailUtilisateur = emailUtilisateur;
         this.usager = UsagerDAO.getUsagerByEmail(emailUtilisateur);
-        this.typeVehicule = typeVehicule;
-        this.plaqueImmatriculation = plaqueImmatriculation;
-        this.idZone = idZone;
+@ -50,8 +44,26 @@ public class Page_Paiement extends JFrame {
         this.nomZone = nomZone;
         this.dureeHeures = dureeHeures;
         this.dureeMinutes = dureeMinutes;
@@ -67,7 +36,7 @@ public class Page_Paiement extends JFrame {
         this.controleur = new PaiementControleur(emailUtilisateur);
         initialisePage();
     }
-    
+@ -59,91 +71,131 @@ public class Page_Paiement extends JFrame {
     private void initialisePage() {
         this.setTitle("Paiement du stationnement");
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -199,13 +168,7 @@ public class Page_Paiement extends JFrame {
         btnAnnuler.addActionListener(e -> annuler());
         btnPayer.addActionListener(e -> traiterPaiement());
         
-        panelBoutons.add(btnAnnuler);
-        panelBoutons.add(btnPayer);
-        
-        mainPanel.add(panelBoutons, BorderLayout.SOUTH);
-        
-        this.setContentPane(mainPanel);
-    }
+@ -157,9 +209,11 @@ public class Page_Paiement extends JFrame {
     
     private void annuler() {
         int confirmation = JOptionPane.showConfirmDialog(this,
@@ -217,24 +180,14 @@ public class Page_Paiement extends JFrame {
             
         if (confirmation == JOptionPane.YES_OPTION) {
             this.dispose();
-        }
+@ -167,8 +221,6 @@ public class Page_Paiement extends JFrame {
     }
     
     private boolean validerFormulaire() {
         return controleur.validerFormulairePaiementComplet(
             txtNomCarte.getText().trim(),
             txtNumeroCarte.getText().trim(),
-            txtDateExpiration.getText().trim(),
-            txtCVV.getText().trim(),
-            this
-        );
-    }
-
-    private void traiterPaiement() {
-        if (!validerFormulaire()) {
-            return;
-        }
-        
+@ -186,6 +238,7 @@ public class Page_Paiement extends JFrame {
         boolean succes = false;
         
         if (idStationnement == null) {
@@ -242,14 +195,7 @@ public class Page_Paiement extends JFrame {
             succes = controleur.traiterPaiementVoirie(
                 txtNomCarte.getText().trim(),
                 txtNumeroCarte.getText().trim(),
-                txtDateExpiration.getText().trim(),
-                txtCVV.getText().trim(),
-                montant,
-                typeVehicule,
-                plaqueImmatriculation,
-                idZone,
-                dureeHeures,
-                dureeMinutes,
+@ -200,6 +253,7 @@ public class Page_Paiement extends JFrame {
                 this
             );
         } else {
@@ -257,7 +203,7 @@ public class Page_Paiement extends JFrame {
             succes = controleur.traiterPaiementParking(
                 txtNomCarte.getText().trim(),
                 txtNumeroCarte.getText().trim(),
-                txtDateExpiration.getText().trim(),
+@ -207,21 +261,57 @@ public class Page_Paiement extends JFrame {
                 txtCVV.getText().trim(),
                 montant,
                 idStationnement,

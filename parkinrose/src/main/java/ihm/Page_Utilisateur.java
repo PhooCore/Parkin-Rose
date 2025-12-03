@@ -8,10 +8,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import modele.Abonnement;
 import modele.Usager;
 import modele.Zone;
-import modele.dao.AbonnementDAO;
 import modele.dao.PaiementDAO;
 import modele.dao.ParkingDAO;
 import modele.dao.StationnementDAO;
@@ -24,7 +22,7 @@ import java.util.List;
 
 /**
  * Page de gestion du compte utilisateur
- * Présente quatre onglets : Informations personnelles, Mon Abonnement, Historique des paiements, Historique des stationnements
+ * Présente trois onglets : Informations personnelles, Historique des paiements, Historique des stationnements
  */
 public class Page_Utilisateur extends JFrame {
     
@@ -32,7 +30,6 @@ public class Page_Utilisateur extends JFrame {
     private String emailUtilisateur;  // Email de l'utilisateur connecté
     private Usager usager;            // Objet utilisateur contenant les informations personnelles
     private UtilisateurControleur controleur;
-    
     /**
      * Constructeur de la page utilisateur
      * @param email l'email de l'utilisateur connecté
@@ -49,7 +46,6 @@ public class Page_Utilisateur extends JFrame {
         this.controleur = new UtilisateurControleur(email);
         initialisePage();
     }
-    
     /**
      * Constructeur par défaut (pour compatibilité)
      * @param email l'email de l'utilisateur connecté
@@ -66,7 +62,7 @@ public class Page_Utilisateur extends JFrame {
         // Configuration de la fenêtre
         this.setTitle("Mon Compte");
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Ferme seulement cette fenêtre
-        this.setSize(800, 650); // Taille augmentée pour accommoder le nouvel onglet
+        this.setSize(700, 600); // Taille adaptée pour afficher les tableaux
         this.setLocationRelativeTo(null); // Centre la fenêtre
         
         // Panel principal avec bordures
@@ -88,15 +84,11 @@ public class Page_Utilisateur extends JFrame {
         JPanel panelInfos = creerOngletInfos();
         onglets.addTab("Informations", panelInfos);
         
-        // Onglet 2 : Mon Abonnement
-        JPanel panelAbonnement = creerOngletAbonnement();
-        onglets.addTab("Mon Abonnement", panelAbonnement);
-        
-        // Onglet 3 : Historique des paiements
+        // Onglet 2 : Historique des paiements
         JPanel panelHistorique = creerOngletHistorique();
         onglets.addTab("Historique des paiements", panelHistorique);
         
-        // Onglet 4 : Historique des stationnements
+        // Onglet 3 : Historique des stationnements
         JPanel panelStationnements = creerOngletStationnements();
         onglets.addTab("Historique des stationnements", panelStationnements);
         
@@ -125,63 +117,7 @@ public class Page_Utilisateur extends JFrame {
         ajouterLigneInfo(panel, "Prénom:", usager.getPrenomUsager());
         ajouterLigneInfo(panel, "Email:", usager.getMailUsager());
         
-        panel.add(Box.createVerticalStrut(20)); 
-        
-        // ========== SECTION ABONNEMENT ==========
-        // Récupérer TOUJOURS les données fraîches depuis la base
-        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
-        
-        JLabel lblTitreAbonnement = new JLabel("Statut Abonnement:");
-        lblTitreAbonnement.setFont(new Font("Arial", Font.BOLD, 14));
-        lblTitreAbonnement.setForeground(new Color(0, 102, 204));
-        lblTitreAbonnement.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(lblTitreAbonnement);
-        
-        JLabel lblStatutAbonnement = new JLabel();
-        lblStatutAbonnement.setFont(new Font("Arial", Font.PLAIN, 14));
-        lblStatutAbonnement.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lblStatutAbonnement.setBorder(BorderFactory.createEmptyBorder(5, 20, 20, 0));
-        
-        JButton btnActionAbonnement = new JButton();
-        btnActionAbonnement.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btnActionAbonnement.setMaximumSize(new Dimension(250, 30));
-        
-        if (abonnements == null || abonnements.isEmpty()) {
-            // Pas d'abonnement actif
-            lblStatutAbonnement.setText("Non actif");
-            lblStatutAbonnement.setForeground(Color.RED);
-            
-            btnActionAbonnement.setText("Souscrire à un abonnement");
-            btnActionAbonnement.setBackground(new Color(0, 102, 204));
-            btnActionAbonnement.setForeground(Color.WHITE);
-            btnActionAbonnement.addActionListener(e -> {
-                Page_Abonnements pageAbonnements = new Page_Abonnements(emailUtilisateur);
-                pageAbonnements.setVisible(true);
-                dispose();
-            });
-        } else {
-            // Afficher l'abonnement actif
-            Abonnement abonnementActuel = abonnements.get(0);
-            lblStatutAbonnement.setText("Actif - " + abonnementActuel.getLibelleAbonnement());
-            lblStatutAbonnement.setForeground(new Color(0, 150, 0));
-            
-            btnActionAbonnement.setText("Voir les détails");
-            btnActionAbonnement.setBackground(new Color(255, 153, 0));
-            btnActionAbonnement.setForeground(Color.WHITE);
-            btnActionAbonnement.addActionListener(e -> {
-                // Basculer sur l'onglet "Mon Abonnement"
-                JTabbedPane parentTabbedPane = (JTabbedPane) SwingUtilities.getAncestorOfClass(JTabbedPane.class, panel);
-                if (parentTabbedPane != null) {
-                    parentTabbedPane.setSelectedIndex(1); // Index 1 pour "Mon Abonnement"
-                }
-            });
-        }
-        
-        panel.add(lblStatutAbonnement);
-        panel.add(Box.createVerticalStrut(5));
-        panel.add(btnActionAbonnement);
         panel.add(Box.createVerticalStrut(30)); 
-        // ========== FIN SECTION ABONNEMENT ==========
         
         // === BOUTONS D'ACTION ===
         JButton btnModifierMdp = new JButton("Modifier le mot de passe");
@@ -207,180 +143,6 @@ public class Page_Utilisateur extends JFrame {
         
         return panel;
     }
-    
-    /**
-     * Crée l'onglet pour gérer l'abonnement de l'utilisateur
-     * @return JPanel configuré pour l'onglet Abonnement
-     */
-    private JPanel creerOngletAbonnement() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
-        // Récupérer TOUJOURS les données fraîches depuis la base
-        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
-        
-        if (abonnements == null || abonnements.isEmpty()) {
-            // Afficher un message si aucun abonnement
-            JPanel panelSansAbonnement = new JPanel(new BorderLayout());
-            panelSansAbonnement.setBackground(Color.WHITE);
-            
-            JLabel lblMessage = new JLabel(
-                "<html><div style='text-align: center;'>" +
-                "<h3>Vous n'avez pas d'abonnement actif</h3>" +
-                "<p>Profitez de nos offres spéciales pour bénéficier d'avantages exclusifs !</p>" +
-                "</div></html>",
-                SwingConstants.CENTER
-            );
-            lblMessage.setFont(new Font("Arial", Font.PLAIN, 14));
-            
-            JButton btnVoirAbonnements = new JButton("Voir les abonnements disponibles");
-            btnVoirAbonnements.setFont(new Font("Arial", Font.BOLD, 14));
-            btnVoirAbonnements.setBackground(new Color(0, 102, 204));
-            btnVoirAbonnements.setForeground(Color.WHITE);
-            btnVoirAbonnements.addActionListener(e -> {
-                Page_Abonnements pageAbonnements = new Page_Abonnements(emailUtilisateur);
-                pageAbonnements.setVisible(true);
-                dispose();
-            });
-            
-            panelSansAbonnement.add(lblMessage, BorderLayout.CENTER);
-            panelSansAbonnement.add(btnVoirAbonnements, BorderLayout.SOUTH);
-            
-            panel.add(panelSansAbonnement, BorderLayout.CENTER);
-        } else {
-            // Afficher les détails de l'abonnement actuel
-            Abonnement abonnementActuel = abonnements.get(0);
-            
-            // Bouton Rafraîchir
-            JPanel panelHaut = new JPanel(new BorderLayout());
-            panelHaut.setBackground(Color.WHITE);
-            
-            JButton btnRafraichir = new JButton("Rafraîchir");
-            btnRafraichir.setFont(new Font("Arial", Font.PLAIN, 12));
-            btnRafraichir.setBackground(new Color(200, 200, 200));
-            btnRafraichir.addActionListener(e -> {
-                // Rafraîchir la page
-                dispose();
-                Page_Utilisateur nouvellePage = new Page_Utilisateur(emailUtilisateur, true);
-                nouvellePage.setVisible(true);
-            });
-            panelHaut.add(btnRafraichir, BorderLayout.EAST);
-            panel.add(panelHaut, BorderLayout.NORTH);
-            
-            JPanel panelDetails = new JPanel();
-            panelDetails.setLayout(new BoxLayout(panelDetails, BoxLayout.Y_AXIS));
-            panelDetails.setBackground(Color.WHITE);
-            panelDetails.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 2));
-            
-            // En-tête
-            JLabel lblTitre = new JLabel("Votre abonnement actuel", SwingConstants.CENTER);
-            lblTitre.setFont(new Font("Arial", Font.BOLD, 18));
-            lblTitre.setForeground(new Color(0, 102, 204));
-            lblTitre.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
-            panelDetails.add(lblTitre);
-            
-            // Détails de l'abonnement
-            JPanel panelInfo = new JPanel(new GridLayout(0, 2, 15, 10));
-            panelInfo.setBackground(Color.WHITE);
-            panelInfo.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-            
-            panelInfo.add(new JLabel("Nom de l'abonnement:"));
-            JLabel lblNom = new JLabel(abonnementActuel.getLibelleAbonnement());
-            lblNom.setFont(new Font("Arial", Font.BOLD, 14));
-            panelInfo.add(lblNom);
-            
-            panelInfo.add(new JLabel("Code:"));
-            panelInfo.add(new JLabel(abonnementActuel.getIdAbonnement()));
-            
-            panelInfo.add(new JLabel("Prix mensuel:"));
-            JLabel lblPrix = new JLabel(String.format("%.2f €", abonnementActuel.getTarifAbonnement()));
-            lblPrix.setFont(new Font("Arial", Font.BOLD, 14));
-            lblPrix.setForeground(new Color(0, 150, 0));
-            panelInfo.add(lblPrix);
-            
-            panelInfo.add(new JLabel("Date de souscription:"));
-            // Récupérer la date depuis la base (à implémenter dans AbonnementDAO)
-            String dateSouscription = "01/01/2024"; // À remplacer par la date réelle
-            panelInfo.add(new JLabel(dateSouscription));
-            
-            panelInfo.add(new JLabel("Prochain renouvellement:"));
-            String dateRenouvellement = "01/02/2024"; // À remplacer par la date réelle
-            panelInfo.add(new JLabel(dateRenouvellement));
-            
-            panelDetails.add(panelInfo);
-            
-            // Avantages
-            JPanel panelAvantages = new JPanel(new BorderLayout());
-            panelAvantages.setBackground(new Color(245, 245, 245));
-            panelAvantages.setBorder(BorderFactory.createTitledBorder("Avantages inclus"));
-            
-            JTextArea txtAvantages = new JTextArea(getAvantagesByType(abonnementActuel.getIdAbonnement()));
-            txtAvantages.setEditable(false);
-            txtAvantages.setFont(new Font("Arial", Font.PLAIN, 12));
-            txtAvantages.setBackground(new Color(245, 245, 245));
-            txtAvantages.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-            
-            panelAvantages.add(txtAvantages, BorderLayout.CENTER);
-            panelDetails.add(panelAvantages);
-            
-            panel.add(panelDetails, BorderLayout.CENTER);
-            
-            // Bouton pour changer d'abonnement
-            JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-            panelBoutons.setBackground(Color.WHITE);
-            
-            JButton btnChangerAbonnement = new JButton("Changer d'abonnement");
-            btnChangerAbonnement.setFont(new Font("Arial", Font.BOLD, 12));
-            btnChangerAbonnement.setBackground(new Color(255, 153, 0));
-            btnChangerAbonnement.setForeground(Color.WHITE);
-            btnChangerAbonnement.addActionListener(e -> {
-                Page_Abonnements pageAbonnements = new Page_Abonnements(emailUtilisateur);
-                pageAbonnements.setVisible(true);
-                dispose();
-            });
-            
-            JButton btnResilier = new JButton("Résilier l'abonnement");
-            btnResilier.setFont(new Font("Arial", Font.PLAIN, 12));
-            btnResilier.setBackground(new Color(220, 80, 80));
-            btnResilier.setForeground(Color.WHITE);
-            btnResilier.addActionListener(e -> {
-                int confirmation = JOptionPane.showConfirmDialog(this,
-                    "Êtes-vous sûr de vouloir résilier votre abonnement ?\n" +
-                    "Cette action sera effective à la fin de la période en cours.",
-                    "Résiliation",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE);
-                    
-                if (confirmation == JOptionPane.YES_OPTION) {
-                    // Supprimer l'abonnement de la base
-                    if (AbonnementDAO.supprimerAbonnementsUtilisateur(usager.getIdUsager())) {
-                        JOptionPane.showMessageDialog(this,
-                            "Votre abonnement a été résilié avec succès.",
-                            "Résiliation confirmée",
-                            JOptionPane.INFORMATION_MESSAGE);
-                        
-                        // Rafraîchir la page
-                        dispose();
-                        Page_Utilisateur nouvellePage = new Page_Utilisateur(emailUtilisateur, true);
-                        nouvellePage.setVisible(true);
-                    } else {
-                        JOptionPane.showMessageDialog(this,
-                            "Une erreur est survenue lors de la résiliation.",
-                            "Erreur",
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-            });
-            
-            panelBoutons.add(btnChangerAbonnement);
-            panelBoutons.add(btnResilier);
-            panel.add(panelBoutons, BorderLayout.SOUTH);
-        }
-        
-        return panel;
-    }
-    
     /**
      * Crée l'onglet de l'historique des paiements
      * @return JPanel configuré pour l'onglet Historique des paiements
@@ -444,7 +206,6 @@ public class Page_Utilisateur extends JFrame {
         
         return panel;
     }
-    
     /**
      * Crée l'onglet de l'historique des stationnements
      * @return JPanel configuré pour l'onglet Historique des stationnements
@@ -473,7 +234,7 @@ public class Page_Utilisateur extends JFrame {
             // Colonne 3: Véhicule (type + plaque)
             donnees[i][2] = s.getTypeVehicule() + " - " + s.getPlaqueImmatriculation();
             
-            // Colonne 4: Zone ou nom du parking - VERSION CORRECTE
+         // Colonne 4: Zone ou nom du parking - VERSION CORRECTE
             String zoneId = s.getIdTarification();
 
             if (zoneId == null || zoneId.trim().isEmpty()) {
