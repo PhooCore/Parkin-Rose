@@ -160,7 +160,6 @@ public class Page_Paiement extends JFrame {
             "Êtes-vous sûr de vouloir annuler le paiement ?",
             "Confirmation d'annulation",
             JOptionPane.YES_NO_OPTION);
-            
         if (confirmation == JOptionPane.YES_OPTION) {
             this.dispose();
         }

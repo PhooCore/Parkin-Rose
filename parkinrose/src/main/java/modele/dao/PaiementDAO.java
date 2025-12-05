@@ -118,6 +118,37 @@ public class PaiementDAO {
      * @return true si l'insertion a réussi, false sinon
      */
     public static boolean enregistrerPaiement(Paiement paiement) {
-        return insert(paiement);
+        String sql = "INSERT INTO Paiement (id_paiement, nom_carte, numero_carte, code_secret_carte, " +
+                    "id_abonnement, montant, id_usager, date_paiement, methode_paiement, statut) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, paiement.getIdPaiement());
+            pstmt.setString(2, paiement.getNomCarte());
+            pstmt.setString(3, paiement.getNumeroCarte());
+            pstmt.setString(4, paiement.getCodeSecretCarte());
+            
+            // Gérer id_abonnement qui peut être NULL
+            if (paiement.getIdAbonnement() != null) {
+                pstmt.setString(5, paiement.getIdAbonnement());
+            } else {
+                pstmt.setString(5, "ABO_SIMPLE"); // Valeur par défaut
+            }
+            
+            pstmt.setDouble(6, paiement.getMontant());
+            pstmt.setInt(7, paiement.getIdUsager());
+            pstmt.setTimestamp(8, Timestamp.valueOf(paiement.getDatePaiement()));
+            pstmt.setString(9, paiement.getMethodePaiement());
+            pstmt.setString(10, paiement.getStatut());
+            
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
