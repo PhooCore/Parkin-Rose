@@ -4,6 +4,7 @@ import modele.Usager;
 import modele.dao.ModifMdpDAO;
 import modele.dao.UsagerDAO;
 import ihm.Page_Utilisateur;
+import ihm.Page_Abonnements;
 import ihm.Page_Authentification;
 import ihm.Page_Modif_MDP;
 import ihm.Page_Historique_Stationnements;
@@ -128,6 +129,12 @@ public class UtilisateurControleur {
         pageModifMdp.setVisible(true);
         pageUtilisateur.setVisible(false);
 
+    }
+    
+    /* VIENT D'ETRE AJOUTE*/
+    public void redirigerVersAbonnements(Page_Utilisateur pageUtilisateur) {
+        new Page_Abonnements(emailUtilisateur).setVisible(true);
+        pageUtilisateur.dispose();
     }
     
     /**

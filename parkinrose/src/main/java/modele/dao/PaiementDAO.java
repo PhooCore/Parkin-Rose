@@ -149,6 +149,38 @@ public class PaiementDAO {
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        } 
+    }
+    
+    /* VIENS D'ETRE AJOUTE*/
+ // Dans modele.dao.PaiementDAO
+    public static boolean insererPaiementAbonnement(int idUsager, String idAbonnement, double montant, 
+                                                    String nomCarte, String numeroCarte, String codeSecret) {
+        // Générer un ID de paiement unique
+        String idPaiement = "PAI_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000);
+        
+        String sql = "INSERT INTO Paiement (id_paiement, nom_carte, numero_carte, code_secret_carte, " +
+                     "id_abonnement, montant, id_usager, date_paiement, methode_paiement, statut) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'CARTE', 'REUSSI')";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, idPaiement);
+            pstmt.setString(2, nomCarte);
+            pstmt.setString(3, numeroCarte);
+            pstmt.setString(4, codeSecret);
+            pstmt.setString(5, idAbonnement);
+            pstmt.setDouble(6, montant);
+            pstmt.setInt(7, idUsager);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de l'insertion du paiement abonnement: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 }

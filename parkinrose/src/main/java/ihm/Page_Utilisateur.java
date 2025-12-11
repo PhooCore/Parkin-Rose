@@ -10,11 +10,13 @@ import java.awt.event.ActionListener;
 
 import modele.Usager;
 import modele.Zone;
+import modele.dao.AbonnementDAO;
 import modele.dao.PaiementDAO;
 import modele.dao.ParkingDAO;
 import modele.dao.StationnementDAO;
 import modele.dao.UsagerDAO;
 import modele.dao.ZoneDAO;
+import modele.Abonnement;
 import modele.Paiement;
 import modele.Parking;
 import modele.Stationnement;
@@ -106,7 +108,7 @@ public class Page_Utilisateur extends JFrame {
      * Crée l'onglet des informations personnelles
      * @return JPanel configuré pour l'onglet Informations
      */
-    private JPanel creerOngletInfos() {
+    /*private JPanel creerOngletInfos() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS)); 
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -142,12 +144,116 @@ public class Page_Utilisateur extends JFrame {
         panel.add(btnDeconnexion);
         
         return panel;
+    }*/
+    
+    /* VIENT D'ETRE AJOUTE*/
+    private JPanel creerOngletInfos() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS)); 
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setBackground(Color.WHITE);
+        
+        // === AFFICHAGE DES INFORMATIONS PERSONNELLES (lecture seule) ===
+        ajouterLigneInfo(panel, "Nom:", usager.getNomUsager());
+        ajouterLigneInfo(panel, "Prénom:", usager.getPrenomUsager());
+        ajouterLigneInfo(panel, "Email:", usager.getMailUsager());
+        
+        panel.add(Box.createVerticalStrut(20));
+        
+        // === LIGNE POUR L'ABONNEMENT ===
+        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
+        
+        if (!abonnements.isEmpty()) {
+            // L'utilisateur a un abonnement actif
+            Abonnement abonnementActif = abonnements.get(0);
+            ajouterLigneInfo(panel, "Abonnement:", abonnementActif.getLibelleAbonnement());
+            
+            // Ajouter la date de début si disponible
+            java.sql.Date dateDebut = AbonnementDAO.getDateDebutAbonnement(usager.getIdUsager());
+            if (dateDebut != null) {
+                ajouterLigneInfo(panel, "Depuis le:", dateDebut.toString());
+            }
+            
+            panel.add(Box.createVerticalStrut(10));
+            
+            // Boutons de gestion d'abonnement
+            JPanel panelBoutonsAbo = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            panelBoutonsAbo.setBackground(Color.WHITE);
+            
+            JButton btnChanger = new JButton("Changer d'abonnement");
+            btnChanger.addActionListener(e -> changerAbonnement(abonnementActif));
+            
+            JButton btnResilier = new JButton("Résilier");
+            btnResilier.setBackground(new Color(220, 80, 80));
+            btnResilier.setForeground(Color.WHITE);
+            btnResilier.addActionListener(e -> resilierAbonnement(abonnementActif));
+            
+            panelBoutonsAbo.add(btnChanger);
+            panelBoutonsAbo.add(btnResilier);
+            
+            panel.add(panelBoutonsAbo);
+            
+        } else {
+            // Pas d'abonnement actif - créer une ligne spéciale avec bouton
+            JPanel ligneAbonnement = new JPanel(new BorderLayout());
+            ligneAbonnement.setBackground(Color.WHITE);
+            ligneAbonnement.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+            
+            JLabel lblLibelle = new JLabel("Abonnement:");
+            lblLibelle.setFont(new Font("Arial", Font.BOLD, 14));
+            lblLibelle.setPreferredSize(new Dimension(100, 25));
+            
+            JLabel lblValeur = new JLabel("Aucun abonnement actif");
+            lblValeur.setFont(new Font("Arial", Font.PLAIN, 14));
+            lblValeur.setForeground(Color.RED);
+            
+            JButton btnSouscrire = new JButton("Souscrire");
+            btnSouscrire.setFont(new Font("Arial", Font.PLAIN, 12));
+            btnSouscrire.setBackground(new Color(0, 120, 215));
+            btnSouscrire.setForeground(Color.WHITE);
+            btnSouscrire.setFocusPainted(false);
+            btnSouscrire.addActionListener(e -> {
+                new Page_Abonnements(emailUtilisateur).setVisible(true);
+                dispose();
+            });
+            
+            ligneAbonnement.add(lblLibelle, BorderLayout.WEST);
+            ligneAbonnement.add(lblValeur, BorderLayout.CENTER);
+            ligneAbonnement.add(btnSouscrire, BorderLayout.EAST);
+            
+            panel.add(ligneAbonnement);
+        }
+        panel.add(Box.createVerticalStrut(30));
+        
+        // === BOUTONS D'ACTION PRINCIPAUX ===
+        JButton btnModifierMdp = new JButton("Modifier le mot de passe");
+        btnModifierMdp.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnModifierMdp.addActionListener(e -> controleur.redirigerVersModificationMDP(Page_Utilisateur.this));
+
+        JButton btnHistorique = new JButton("Voir l'historique des stationnements");
+        btnHistorique.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnHistorique.addActionListener(e -> controleur.redirigerVersHistoriqueStationnements(Page_Utilisateur.this));
+
+        JButton btnDeconnexion = new JButton("Déconnexion");
+        btnDeconnexion.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnDeconnexion.setBackground(new Color(220, 80, 80));
+        btnDeconnexion.setForeground(Color.WHITE);
+        btnDeconnexion.addActionListener(e -> controleur.deconnecterUtilisateur(Page_Utilisateur.this));
+        
+        panel.add(btnModifierMdp);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(btnHistorique);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(btnDeconnexion);
+        
+        return panel;
     }
+    
     /**
      * Crée l'onglet de l'historique des paiements
      * @return JPanel configuré pour l'onglet Historique des paiements
      */
-    private JPanel creerOngletHistorique() {
+    /*private JPanel creerOngletHistorique() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         
@@ -205,7 +311,114 @@ public class Page_Utilisateur extends JFrame {
         panel.add(panelResume, BorderLayout.SOUTH);
         
         return panel;
+    }*/
+    
+    private JPanel creerOngletHistorique() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        
+        // === RÉCUPÉRATION DES DONNÉES RÉELLES (toujours fraîches) ===
+        // Récupère tous les paiements de l'utilisateur depuis la base de données
+        List<Paiement> paiements = PaiementDAO.getPaiementsByUsager(usager.getIdUsager());
+        
+        // En-têtes des colonnes du tableau
+        String[] colonnes = {"Date", "Montant", "Type", "Détails", "Statut"};
+        
+        // Conversion des objets Paiement en données pour le tableau
+        Object[][] donnees = new Object[paiements.size()][5];
+        double totalDepense = 0.0; // Variable pour calculer le total dépensé
+        double totalAbonnements = 0.0;
+        double totalStationnements = 0.0;
+        int nbAbonnements = 0;
+        int nbStationnements = 0;
+        
+        for (int i = 0; i < paiements.size(); i++) {
+            Paiement p = paiements.get(i);
+            // Formatage des données pour chaque colonne
+            donnees[i][0] = p.getDatePaiement().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            donnees[i][1] = String.format("%.2f €", p.getMontant());
+            donnees[i][2] = p.getTypePaiement();
+            
+            // Colonne Détails : spécifique pour les abonnements
+            String details = "-";
+            if ("ABONNEMENT".equals(p.getTypePaiement()) && p.getIdAbonnement() != null) {
+                // Récupérer le libellé de l'abonnement
+                Abonnement abonnement = AbonnementDAO.getAbonnementById(p.getIdAbonnement());
+                details = (abonnement != null) ? abonnement.getLibelleAbonnement() : p.getIdAbonnement();
+                totalAbonnements += p.getMontant();
+                nbAbonnements++;
+            } else if ("STATIONNEMENT".equals(p.getTypePaiement())) {
+                totalStationnements += p.getMontant();
+                nbStationnements++;
+            }
+            donnees[i][3] = details;
+            
+            donnees[i][4] = "Payé"; // Statut fixe pour l'instant
+            
+            totalDepense += p.getMontant(); // Calcul du total dépensé
+        }
+        
+        // === CRÉATION DU TABLEAU ===
+        JTable table = new JTable(donnees, colonnes);
+        table.setFont(new Font("Arial", Font.PLAIN, 12));
+        table.setRowHeight(25); // Hauteur des lignes
+        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        
+        // Empêcher l'édition des cellules (données en lecture seule)
+        table.setDefaultEditor(Object.class, null);
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        // === PANEL DE RÉSUMÉ STATISTIQUES ===
+        JPanel panelResume = new JPanel(new GridLayout(1, 5, 10, 0)); // 5 colonnes
+        panelResume.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panelResume.setBackground(Color.WHITE);
+        
+        // Calcul de la date du dernier paiement
+        String dernierPaiement = "Aucun";
+        String dernierType = "-";
+        if (!paiements.isEmpty()) {
+            // Le premier paiement de la liste est le plus récent
+            dernierPaiement = paiements.get(0).getDatePaiement().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            dernierType = paiements.get(0).getTypePaiement();
+        }
+        
+        // Ajout des statistiques
+        ajouterStatistique(panelResume, "Total dépensé", String.format("%.2f €", totalDepense));
+        ajouterStatistique(panelResume, "Abonnements", String.format("%.2f €", totalAbonnements));
+        ajouterStatistique(panelResume, "Stationnements", String.format("%.2f €", totalStationnements));
+        ajouterStatistique(panelResume, "Nb paiements", String.valueOf(paiements.size()));
+        ajouterStatistique(panelResume, "Dernier", dernierPaiement);
+        
+        panel.add(panelResume, BorderLayout.SOUTH);
+        
+        // === BOUTON POUR GÉRER LES ABONNEMENTS (uniquement si pas d'abonnement) ===
+        List<Abonnement> abonnementsActuels = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
+        if (abonnementsActuels.isEmpty()) {
+            JPanel panelBouton = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            panelBouton.setBackground(Color.WHITE);
+            panelBouton.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+            
+            JButton btnAbonnements = new JButton("💎 Découvrir nos abonnements");
+            btnAbonnements.setBackground(new Color(0, 120, 215));
+            btnAbonnements.setForeground(Color.WHITE);
+            btnAbonnements.setFont(new Font("Arial", Font.BOLD, 12));
+            btnAbonnements.addActionListener(e -> {
+                new Page_Abonnements(emailUtilisateur).setVisible(true);
+                dispose();
+            });
+            
+            panelBouton.add(btnAbonnements);
+            panel.add(panelBouton, BorderLayout.NORTH);
+        }
+        
+        return panel;
     }
+
+
+    /*VIENT D'ETRE AJOUTE*/
+    
     /**
      * Crée l'onglet de l'historique des stationnements
      * @return JPanel configuré pour l'onglet Historique des stationnements
@@ -392,6 +605,104 @@ public class Page_Utilisateur extends JFrame {
         Page_Principale pagePrincipale = new Page_Principale(emailUtilisateur);
         pagePrincipale.setVisible(true);
         dispose(); // Ferme la page actuelle
+    }
+    
+    /* VIENT D'ETRE AJOUTE*/
+    private void changerAbonnement(Abonnement abonnementActuel) {
+        String message = "Vous avez actuellement l'abonnement : " + abonnementActuel.getLibelleAbonnement() + "\n\n" +
+                        "⚠️ En changeant d'abonnement, votre abonnement actuel sera résilié.\n" +
+                        "Le montant déjà payé ne sera pas remboursé.\n\n" +
+                        "Voulez-vous continuer ?";
+        
+        int choix = JOptionPane.showConfirmDialog(
+            this,
+            message,
+            "Changement d'abonnement",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (choix == JOptionPane.YES_OPTION) {
+            boolean supprime = AbonnementDAO.supprimerAbonnementsUtilisateur(usager.getIdUsager());
+            
+            if (supprime) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Votre ancien abonnement a été résilié.\nVous allez être redirigé vers la page des abonnements.",
+                    "Abonnement résilié",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                
+                new Page_Abonnements(emailUtilisateur).setVisible(true);
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Erreur lors de la résiliation de l'abonnement.\nVeuillez réessayer ou contacter le support.",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+    }
+
+    /**
+     * Permet de résilier l'abonnement actuel
+     */
+    private void resilierAbonnement(Abonnement abonnementActuel) {
+        String message = "⚠️ ATTENTION ⚠️\n\n" +
+                        "Vous êtes sur le point de résilier votre abonnement :\n" +
+                        abonnementActuel.getLibelleAbonnement() + " - " + 
+                        String.format("%.2f €", abonnementActuel.getTarifAbonnement()) + "\n\n" +
+                        "Conséquences :\n" +
+                        "• Perte de tous les avantages\n" +
+                        "• Aucun remboursement\n" +
+                        "• Retour aux tarifs standards\n\n" +
+                        "Êtes-vous sûr de vouloir résilier et perdre votre argent ?";
+        
+        int choix = JOptionPane.showConfirmDialog(
+            this,
+            message,
+            "Résiliation d'abonnement",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        
+        if (choix == JOptionPane.YES_OPTION) {
+            int confirmation2 = JOptionPane.showConfirmDialog(
+                this,
+                "Dernière confirmation :\n\n" +
+                "Vous allez perdre " + String.format("%.2f €", abonnementActuel.getTarifAbonnement()) + "\n\n" +
+                "Confirmez-vous définitivement la résiliation ?",
+                "Confirmation finale",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            
+            if (confirmation2 == JOptionPane.YES_OPTION) {
+                boolean supprime = AbonnementDAO.supprimerAbonnementsUtilisateur(usager.getIdUsager());
+                
+                if (supprime) {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Votre abonnement a été résilié avec succès.\n\n" +
+                        "Vous pouvez souscrire à un nouvel abonnement à tout moment.",
+                        "Résiliation confirmée",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                    
+                    new Page_Utilisateur(emailUtilisateur, true).setVisible(true);
+                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Erreur lors de la résiliation.\nVeuillez contacter le support.",
+                        "Erreur",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        }
     }
     
     /**
