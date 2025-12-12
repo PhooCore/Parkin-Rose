@@ -10,6 +10,7 @@ import java.util.Comparator;
 
 public class Page_Abonnements extends JFrame {
     
+	// Attributs nécessaires //
     private String emailUtilisateur;
     private int idUsager;
     private List<Abonnement> abonnements;
@@ -19,11 +20,10 @@ public class Page_Abonnements extends JFrame {
     private JCheckBox checkGratuit, checkMoto, checkAnnuel, checkHebdo;
     private JTextField txtRechercher;
     private JButton rechercheBtn;
-    
-    // Add these as instance variables to store references
     private JPanel headerPanel;
     private JLabel lblTitre;
     
+    // Création de la page //
     public Page_Abonnements(String email) {
         this.emailUtilisateur = email;
         this.idUsager = modele.dao.UsagerDAO.getUsagerByEmail(email).getIdUsager();
@@ -32,6 +32,7 @@ public class Page_Abonnements extends JFrame {
         initialiserPage();
     }
     
+    // Initialisation de la page //
     private void initialiserPage() {
         setTitle("Abonnements disponibles");
         setSize(900, 650);
@@ -42,11 +43,9 @@ public class Page_Abonnements extends JFrame {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(Color.WHITE);
         
-        // Header avec titre et filtres
         headerPanel = creerHeaderPanel();
         mainPanel.add(headerPanel, BorderLayout.NORTH);
         
-        // Panel pour les cartes d'abonnement
         panelAbonnements = new JPanel(new GridLayout(0, 1, 0, 15));
         panelAbonnements.setBackground(Color.WHITE);
         
@@ -71,20 +70,20 @@ public class Page_Abonnements extends JFrame {
         setContentPane(mainPanel);
     }
     
+    // Panel Head //
     private JPanel creerHeaderPanel() {
         JPanel headerPanel = new JPanel(new BorderLayout(10, 10));
         headerPanel.setBackground(Color.WHITE);
         
-        // Panel supérieur avec titre et barre de recherche
+        // Titre et barre de recherche
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
         topPanel.setBackground(Color.WHITE);
         
-        // Titre avec compteur
         lblTitre = new JLabel("Choisissez votre abonnement (" + abonnementsFiltres.size() + ")", SwingConstants.CENTER);
         lblTitre.setFont(new Font("Arial", Font.BOLD, 24));
         topPanel.add(lblTitre, BorderLayout.CENTER);
         
-        // Barre de recherche - Inspirée de Page_Accueil
+        // Barre de recherche
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         searchPanel.setBackground(Color.WHITE);
         
@@ -92,11 +91,9 @@ public class Page_Abonnements extends JFrame {
         txtRechercher.setPreferredSize(new Dimension(200, 30));
         txtRechercher.setFont(new Font("Arial", Font.PLAIN, 12));
         
-        // Ajout du texte par défaut
         txtRechercher.setText("Rechercher un abonnement...");
         txtRechercher.setForeground(Color.GRAY);
         
-        // Gestion du focus pour le texte par défaut
         txtRechercher.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 if (txtRechercher.getText().equals("Rechercher un abonnement...")) {
@@ -113,7 +110,7 @@ public class Page_Abonnements extends JFrame {
             }
         });
         
-        // Bouton de recherche avec icône
+        // Bouton de recherche
         rechercheBtn = new JButton("🔍 Rechercher");
         rechercheBtn.setPreferredSize(new Dimension(120, 30));
         rechercheBtn.setFont(new Font("Arial", Font.PLAIN, 12));
@@ -176,6 +173,7 @@ public class Page_Abonnements extends JFrame {
         return headerPanel;
     }
     
+    // Application les filtres //
     private void appliquerFiltres() {
         // Réinitialiser la liste filtrée
         abonnementsFiltres = new ArrayList<>(abonnements);
@@ -234,6 +232,7 @@ public class Page_Abonnements extends JFrame {
         afficherAbonnements();
     }
     
+    // Affichage des abonnements //
     private void afficherAbonnements() {
         // Vider le panel actuel
         panelAbonnements.removeAll();
@@ -266,6 +265,7 @@ public class Page_Abonnements extends JFrame {
         panelAbonnements.repaint();
     }
     
+    // Création de la liste des abonnements //
     private JPanel creerCarteAbonnement(Abonnement abonnement) {
         JPanel carte = new JPanel(new BorderLayout(15, 10));
         carte.setBorder(BorderFactory.createCompoundBorder(
@@ -274,7 +274,6 @@ public class Page_Abonnements extends JFrame {
         ));
         carte.setBackground(Color.WHITE);
         
-        // Partie gauche : Informations de base
         JPanel panelInfo = new JPanel(new GridLayout(0, 1, 5, 5));
         panelInfo.setBackground(Color.WHITE);
         
@@ -297,7 +296,7 @@ public class Page_Abonnements extends JFrame {
         lblId.setFont(new Font("Arial", Font.ITALIC, 12));
         lblId.setForeground(Color.GRAY);
         
-        // Badges pour catégories
+        // Badges pour les catégories
         JPanel badgesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         badgesPanel.setBackground(Color.WHITE);
         
@@ -338,7 +337,7 @@ public class Page_Abonnements extends JFrame {
         panelInfo.add(lblId);
         panelInfo.add(badgesPanel);
         
-        // Partie droite : Bouton de sélection
+        // Bouton de sélection
         JButton btnChoisir = new JButton("Choisir cet abonnement");
         btnChoisir.setBackground(new Color(0, 120, 215));
         btnChoisir.setForeground(Color.WHITE);
