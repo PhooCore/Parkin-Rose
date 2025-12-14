@@ -225,6 +225,9 @@ public class Page_Utilisateur extends JFrame {
         }
         panel.add(Box.createVerticalStrut(30));
         
+        
+        // == CARTE TISSEO == //
+        
         // === BOUTONS D'ACTION PRINCIPAUX ===
         JButton btnModifierMdp = new JButton("Modifier le mot de passe");
         btnModifierMdp.setAlignmentX(Component.CENTER_ALIGNMENT);

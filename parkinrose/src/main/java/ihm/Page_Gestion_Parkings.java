@@ -389,9 +389,9 @@ public class Page_Gestion_Parkings extends JFrame {
                 Parking nouveauParking = new Parking(
                     txtId.getText().trim().toUpperCase(),
                     txtNom.getText().trim(),
-                    (int) spinnerPlacesTotal.getValue(),
-                    (int) spinnerPlacesDispo.getValue(),
                     txtAdresse.getText().trim(),
+                    (int) spinnerPlacesDispo.getValue(),
+                    (int) spinnerPlacesTotal.getValue(),
                     (double) spinnerHauteur.getValue(),
                     checkTarifSoiree.isSelected(),
                     checkHasMoto.isSelected(),

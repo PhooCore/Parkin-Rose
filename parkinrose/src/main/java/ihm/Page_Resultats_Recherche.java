@@ -294,21 +294,42 @@ public class Page_Resultats_Recherche extends JFrame {
     }
     
     private void selectionnerParking(Parking parking) {
-        int choix = JOptionPane.showConfirmDialog(this,
-            "Voulez-vous préparer un stationnement pour :\n" +
-            parking.getLibelleParking() + "\n" +
-            parking.getAdresseParking() + "\n\n" +
-            "Places disponibles: " + parking.getPlacesDisponibles() + "/" + parking.getNombrePlaces() + "\n" +
-            "Hauteur maximale: " + parking.getHauteurParking() + "m",
+
+        boolean estRelais = TarifParkingDAO.estParkingRelais(parking.getIdParking());
+        boolean estExceptionSeptDeniers = "PARK_SEPT_DENIERS".equals(parking.getIdParking());
+        StringBuilder message = new StringBuilder();
+        message.append("Voulez-vous préparer un stationnement pour :\n")
+               .append(parking.getLibelleParking()).append("\n")
+               .append(parking.getAdresseParking()).append("\n\n")
+               .append("Places voiture: ")
+               .append(parking.getPlacesDisponibles()).append("/")
+               .append(parking.getNombrePlaces()).append("\n");
+        if (parking.hasMoto()) {
+            message.append("Places moto: ")
+                   .append(parking.getPlacesMotoDisponibles()).append("/")
+                   .append(parking.getPlacesMoto()).append("\n");
+        }
+        message.append("Hauteur maximale: ")
+               .append(parking.getHauteurParking()).append("m\n");
+
+        // message parking relais
+        if (estRelais && !estExceptionSeptDeniers) {
+            message.append("\n⚠️ Parking relais\n")
+                   .append("Accessible uniquement aux détenteurs d’une carte Tisséo.");
+        }
+        int choix = JOptionPane.showConfirmDialog(
+            this,
+            message.toString(),
             "Confirmation",
-            JOptionPane.YES_NO_OPTION);
-            
+            JOptionPane.YES_NO_OPTION
+        );
         if (choix == JOptionPane.YES_OPTION) {
             Page_Garer_Parking pageParking = new Page_Garer_Parking(emailUtilisateur, parking);
             pageParking.setVisible(true);
             dispose();
         }
     }
+
     private void afficherTousParkings() {
         List<Parking> tousParkings = ParkingDAO.getAllParkings();
         Page_Tous_Parkings pageTousParkings = new Page_Tous_Parkings(emailUtilisateur, tousParkings);
