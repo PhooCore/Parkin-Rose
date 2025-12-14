@@ -3,7 +3,9 @@ package modele.dao;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TarifParkingDAO {
@@ -14,10 +16,29 @@ public class TarifParkingDAO {
         "PARK_PONTS_JUMEAUX", "PARK_BONNEFOY", "PARK_MIRAIL", "PARK_CROIX_PIERRE"
     };
     
-    // Liste des parkings relais (gratuits avec titre transport)
-    private static final String[] PARKINGS_RELAIS = {
-        "PARK_SEPT_DENIERS", "PARK_BAGATELLE", "PARK_JOLIMONT", "PARK_ARENES"
-    };
+    /**
+     * Récupère la liste des parkings relais (gratuits mais accessibles seulement si on a une carte pastel)
+     */
+    public static List<String> getParkingsRelais() {
+        List<String> parkingsRelais = new ArrayList<>();
+
+        String sql = "select id_parking from parking where est_relais = 1";
+
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                parkingsRelais.add(rs.getString("id_parking"));
+            }
+
+        } catch (SQLException e) {
+            System.err.println("erreur récupération parkings relais : " + e.getMessage());
+        }
+
+        return parkingsRelais;
+    }
+
     
     /**
      * Calcule le coût du stationnement en parking selon la durée réelle
@@ -144,14 +165,11 @@ public class TarifParkingDAO {
     /**
      * Vérifie si c'est un parking relais
      */
+
     public static boolean estParkingRelais(String idParking) {
-        for (String parking : PARKINGS_RELAIS) {
-            if (parking.equals(idParking)) {
-                return true;
-            }
-        }
-        return false;
+        return getParkingsRelais().contains(idParking);
     }
+
     
     /**
      * Récupère le tarif horaire pour un parking
