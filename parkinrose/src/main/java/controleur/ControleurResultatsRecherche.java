@@ -103,7 +103,8 @@ public class ControleurResultatsRecherche implements ActionListener {
         }
     }
     
-    private void selectionnerParking(int index) {
+    @SuppressWarnings("null")
+	private void selectionnerParking(int index) {
         if (index >= 0 && index < vue.parkingsFiltres.size()) {
             Parking parking = vue.parkingsFiltres.get(index);
             boolean estRelais = TarifParkingDAO.estParkingRelais(parking.getIdParking());
@@ -186,6 +187,15 @@ public class ControleurResultatsRecherche implements ActionListener {
             );
 
             if (choix == JOptionPane.YES_OPTION) {
+            	
+            	if (estRelais) {
+            		  String carteTisseo = UsagerDAO.getCarteTisseoByUsager(UsagerDAO.getUsagerByEmail(vue.emailUtilisateur).getIdUsager());
+            		  if (carteTisseo == null) {
+            			  JOptionPane.showMessageDialog(vue, "Vous n'avez aucune carte Tisseo renseignée.", "Carte Tisseo requise", JOptionPane.WARNING_MESSAGE);
+            			  return;
+            		  }
+            	
+            	}
                 Page_Garer_Parking pageParking = new Page_Garer_Parking(vue.emailUtilisateur, parking);
                 pageParking.setVisible(true);
                 vue.dispose();
