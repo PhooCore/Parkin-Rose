@@ -4,6 +4,7 @@ import ihm.Page_Garer_Parking;
 import ihm.Page_Resultats_Recherche;
 import modele.Parking;
 import modele.dao.TarifParkingDAO;
+import modele.dao.UsagerDAO;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -102,7 +103,8 @@ public class ControleurResultatsRecherche implements ActionListener {
         }
     }
     
-    private void selectionnerParking(int index) {
+    @SuppressWarnings("null")
+	private void selectionnerParking(int index) {
         if (index >= 0 && index < vue.parkingsFiltres.size()) {
             Parking parking = vue.parkingsFiltres.get(index);
 
@@ -127,7 +129,7 @@ public class ControleurResultatsRecherche implements ActionListener {
                    .append(parking.getHauteurParking()).append("m\n");
 
             if (estRelais && !estExceptionSeptDeniers) {
-                message.append("\n⚠️ Parking relais\n")
+                message.append("\n Attention : Parking relais\n")
                        .append("Accessible uniquement aux détenteurs d’une carte Tisséo.");
             }
 
@@ -139,6 +141,15 @@ public class ControleurResultatsRecherche implements ActionListener {
             );
 
             if (choix == JOptionPane.YES_OPTION) {
+            	
+            	if (estRelais) {
+            		  String carteTisseo = UsagerDAO.getCarteTisseoByUsager(UsagerDAO.getUsagerByEmail(vue.emailUtilisateur).getIdUsager());
+            		  if (carteTisseo == null) {
+            			  JOptionPane.showMessageDialog(vue, "Vous n'avez aucune carte Tisseo renseignée.", "Carte Tisseo requise", JOptionPane.WARNING_MESSAGE);
+            			  return;
+            		  }
+            	
+            	}
                 Page_Garer_Parking pageParking = new Page_Garer_Parking(vue.emailUtilisateur, parking);
                 pageParking.setVisible(true);
                 vue.dispose();

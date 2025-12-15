@@ -13,7 +13,7 @@ public class UsagerDAO {
      * @return true si l'ajout a réussi, false sinon
      */
     public static boolean ajouterUsager(Usager usager) {
-        String sql = "INSERT INTO Usager (nom_usager, prenom_usager, mail_usager, mot_de_passe, numero_carte_tisseo, is_admin) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Usager (nom_usager, prenom_usager, mail_usager, mot_de_passe, numero_carte_tisseo, is_admin) VALUES (?, ?, ?, ?, ?, ?)";
         try (
             // Connexion à la base de données
             Connection conn = MySQLConnection.getConnection();
@@ -27,7 +27,7 @@ public class UsagerDAO {
             stmt.setString(3, usager.getMailUsager());       // 3ème ? : email de l'usager
             stmt.setString(4, usager.getMotDePasse());       // 4ème ? : mot de passe (en clair - à hasher en production)
             stmt.setString(5, usager.getNumeroCarteTisseo());// 5ème ? : num carte pastel
-            stmt.setBoolean(5, usager.isAdmin());
+            stmt.setBoolean(6, usager.isAdmin());
             // Exécution de la requête d'insertion
             int ligneinseree = stmt.executeUpdate();
             
@@ -153,7 +153,7 @@ public class UsagerDAO {
     }
     
     public static String getCarteTisseoByUsager(int idUsager) {
-    	String sql = "select numero_carte_tisse from usager when id_usager = ?";
+    	String sql = "select numero_carte_tisseo from usager where id_usager = ?";
     	try (Connection conn = MySQLConnection.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
     		stmt.setInt(1, idUsager);

@@ -160,14 +160,34 @@ public class Page_Utilisateur extends JFrame {
         
         //Ajout carte Tisseo
         String carteTisseo = UsagerDAO.getCarteTisseoByUsager(usager.getIdUsager());
-        ajouterLigneInfo(panel, "Carte Tisséo:", carteTisseo);
-        
-        
-        
-        
-        
 
-        
+        if (carteTisseo == null) {
+
+            JPanel ligneCarte = new JPanel(new BorderLayout());
+            ligneCarte.setBackground(Color.WHITE);
+            ligneCarte.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+            JLabel lblLibelle = new JLabel("Carte Tisséo:");
+            lblLibelle.setFont(new Font("Arial", Font.BOLD, 14));
+            lblLibelle.setPreferredSize(new Dimension(120, 25));
+
+            JLabel lblValeur = new JLabel("Aucune carte Tisséo renseignée");
+            lblValeur.setFont(new Font("Arial", Font.PLAIN, 14));
+            lblValeur.setForeground(Color.RED);
+
+            JButton btnAjouter = new JButton("Ajouter une carte");
+            btnAjouter.addActionListener(e -> ouvrirPopupAjoutCarteTisseo());
+
+            ligneCarte.add(lblLibelle, BorderLayout.WEST);
+            ligneCarte.add(lblValeur, BorderLayout.CENTER);
+            ligneCarte.add(btnAjouter, BorderLayout.EAST);
+
+            panel.add(ligneCarte);
+
+        } else {
+            ajouterLigneInfo(panel, "Carte Tisséo:", carteTisseo);
+        }
+
         // Boutons d'action
         btnModifierMdp = new JButton("Modifier le mot de passe");
         btnModifierMdp.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -372,6 +392,42 @@ public class Page_Utilisateur extends JFrame {
         
         panel.add(statPanel);
     }
+    
+    //ouvre le pop up pour renseigner sa carte tisseo 
+    private void ouvrirPopupAjoutCarteTisseo() {
+
+        String numeroCarte = JOptionPane.showInputDialog(
+            this,
+            "Entrez votre numéro de carte Tisséo :",
+            "Carte Tisséo",
+            JOptionPane.PLAIN_MESSAGE
+        );
+
+        
+ 
+        if (numeroCarte != null) {
+        	
+        	if (!(numeroCarte.matches("\\d{10}"))) {
+            	JOptionPane.showMessageDialog(this,
+                        "Le format est incorrect. Veuillez réessayer.",
+                        "Numéro invalide", JOptionPane.WARNING_MESSAGE);
+        	} else {
+                UsagerDAO.enregistrerCarteTisseo(usager.getIdUsager(), numeroCarte.trim());
+
+                JOptionPane.showMessageDialog(this,
+                    "Carte Tisséo enregistrée avec succès",
+                    "Succès",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+
+                // Rafraîchir la page
+                new Page_Utilisateur(emailUtilisateur, true).setVisible(true);
+                dispose();
+        	}
+            
+        }
+    }
+
     
     private void retourAccueil() {
         // Retour à la page principale

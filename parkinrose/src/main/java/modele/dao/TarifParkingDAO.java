@@ -49,6 +49,11 @@ public class TarifParkingDAO {
             return 0.00;
         }
         
+        if (estParkingRelais(idParking)) {
+        	return 0.00;
+        }
+        
+        
         // Vérifier si le tarif soirée s'applique
         if (tarifSoireeApplicable(heureArrivee, heureDepart, idParking)) {
             System.out.println("Tarif soirée appliqué pour " + idParking + ": 5.90€");
@@ -209,6 +214,10 @@ public class TarifParkingDAO {
         if (estParkingGratuit(idParking)) {
             sb.append("Parking gratuit");
             return sb.toString();
+        }
+        if (estParkingRelais(idParking)) {
+        	sb.append("Parking relais : gratuit");
+        	return sb.toString();
         }
         
         double tarifHoraire = getTarifHoraire(idParking);
