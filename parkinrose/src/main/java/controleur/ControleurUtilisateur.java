@@ -8,6 +8,7 @@ import ihm.Page_Modif_MDP;
 import ihm.Page_Principale;
 import ihm.Page_Abonnements;
 import ihm.Page_Historique_Stationnements;
+import ihm.Page_Gestion_Vehicules;
 import javax.swing.JOptionPane;
 import javax.swing.JButton;
 import java.awt.Window;
@@ -45,6 +46,11 @@ public class ControleurUtilisateur implements ActionListener {
         if (vue.getBtnRetour() != null) {
             vue.getBtnRetour().addActionListener(this);
         }
+        
+        // Nouveau bouton pour gérer les véhicules
+        if (vue.getBtnGestionVehicules() != null) {
+            vue.getBtnGestionVehicules().addActionListener(this);
+        }
     }
     
     @Override
@@ -53,11 +59,50 @@ public class ControleurUtilisateur implements ActionListener {
         
         if (source == vue.getBtnModifierMdp()) {
             ouvrirModificationMotDePasse();
+        } else if (source == vue.getBtnGestionVehicules()) {
+            ouvrirGestionVehicules();
         } else if (source == vue.getBtnDeconnexion()) {
             deconnecterUtilisateur();
         } else if (source == vue.getBtnRetour()) {
             retourAccueil();
         }
+    }
+    
+    /**
+     * Ouvre la page de gestion des véhicules
+     */
+    private void ouvrirGestionVehicules() {
+        if (usager == null) {
+            JOptionPane.showMessageDialog(vue,
+                "Utilisateur non trouvé. Veuillez vous reconnecter.",
+                "Erreur",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Créer la page de gestion des véhicules
+        Page_Gestion_Vehicules pageVehicules = new Page_Gestion_Vehicules(emailUtilisateur);
+        pageVehicules.setVisible(true);
+        
+        // Masquer la page utilisateur temporairement
+        vue.setVisible(false);
+        
+        // Ajouter un listener pour détecter la fermeture de la page
+        pageVehicules.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                // Lorsque la page de gestion des véhicules est fermée, réafficher la page utilisateur
+                vue.setVisible(true);
+                vue.toFront();
+            }
+            
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                // Même traitement que windowClosed
+                vue.setVisible(true);
+                vue.toFront();
+            }
+        });
     }
     
     /**
@@ -116,7 +161,8 @@ public class ControleurUtilisateur implements ActionListener {
                 if (window instanceof Page_Principale || 
                     window instanceof Page_Abonnements ||
                     window instanceof Page_Modif_MDP ||
-                    window instanceof Page_Historique_Stationnements) {
+                    window instanceof Page_Historique_Stationnements ||
+                    window instanceof Page_Gestion_Vehicules) { // Ajout de la nouvelle page
                     window.dispose();
                 }
             }
@@ -193,6 +239,4 @@ public class ControleurUtilisateur implements ActionListener {
     public String getEmailUtilisateur() {
         return emailUtilisateur;
     }
-    
-
 }

@@ -9,12 +9,12 @@ public class Usager {
     private String numeroCarteTisseo;
     private boolean isAdmin;
 
-    public Usager(String nomUsager, String prenomUsager, String mailUsager, String motDePasse, String numeroCarteTisseo) {
+    public Usager(String nomUsager, String prenomUsager, String mailUsager, String motDePasse) {
         this.nomUsager = nomUsager;
         this.prenomUsager = prenomUsager;
         this.mailUsager = mailUsager;
         this.motDePasse = motDePasse;
-        this.numeroCarteTisseo = numeroCarteTisseo;
+        this.numeroCarteTisseo = null;
     }
 
     public Usager() {}

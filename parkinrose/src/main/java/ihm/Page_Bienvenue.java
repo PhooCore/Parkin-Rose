@@ -99,17 +99,7 @@ public class Page_Bienvenue extends JFrame {
         contentPanel.add(buttonPanel);
 
         contentPanel.add(Box.createVerticalGlue());
-
         new ControleurBienvenue(this);
-    }
-
-    private class BtnEntrerActionListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Page_Authentification loginPage = new Page_Authentification();
-            loginPage.setVisible(true);
-            dispose();
-        }
     }
 
     public static void main(String[] args) {

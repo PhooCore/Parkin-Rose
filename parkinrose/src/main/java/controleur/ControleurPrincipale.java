@@ -55,7 +55,6 @@ public class ControleurPrincipale implements ActionListener {
         
         if (source == vue.btnUtilisateur) {
             action = "PROFIL";
-            System.out.println("Bouton Mon Compte cliqué!");
         } else if (source == vue.btnPreparerStationnement) {
             action = "PREPARER";
         } else if (source == vue.btnStationnement) {

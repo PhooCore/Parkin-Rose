@@ -22,7 +22,6 @@ public class PaiementDAO {
             pstmt.setInt(1, idUsager);
             ResultSet rs = pstmt.executeQuery();
             
-            System.out.println("DEBUG PaiementDAO: Recherche paiements pour usager " + idUsager);
             
             while (rs.next()) {
                 Paiement paiement = new Paiement();
@@ -43,14 +42,11 @@ public class PaiementDAO {
                 } else {
                     paiement.setTypePaiement("Stationnement");
                 }
-                
-                System.out.println("DEBUG: Paiement trouvé - " + paiement.getIdPaiement() + 
-                                 " - " + paiement.getMontant() + "€");
+
                 
                 paiements.add(paiement);
             }
-            
-            System.out.println("DEBUG PaiementDAO: " + paiements.size() + " paiements trouvés");
+
             
         } catch (SQLException e) {
             System.err.println("❌ Erreur dans getPaiementsByUsager:");

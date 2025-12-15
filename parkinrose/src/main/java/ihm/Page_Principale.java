@@ -7,6 +7,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import modele.Stationnement;
 import modele.Parking;
 import modele.Usager;
@@ -27,7 +29,9 @@ public class Page_Principale extends JFrame {
     private JTextField searchField;
     private JPanel headerPanel;
     private CartePanel cartePanel;
-
+    private Map<String, JButton> boutonsZones = new HashMap<>();
+    private JButton btnAdmin;
+    
     public Page_Principale(String email) {
         this.emailUtilisateur = email;
         this.usager = UsagerDAO.getUsagerByEmail(email);
@@ -44,7 +48,7 @@ public class Page_Principale extends JFrame {
     private void initialisePage() {
         this.setTitle("ParkinRose - Accueil");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setSize(1200, 900); // Taille augmentée de 850 à 900
+        this.setSize(1300, 900); // Légèrement plus large pour éviter le chevauchement
         this.setLocationRelativeTo(null);
         this.setResizable(true);
         
@@ -69,12 +73,16 @@ public class Page_Principale extends JFrame {
     }
     
     private void ajouterBoutonAdmin() {
-        JButton btnAdmin = new JButton("Administration");
-        btnAdmin.setPreferredSize(new Dimension(130, 35));
+        JButton btnAdmin = new JButton("Admin");
+        btnAdmin.setPreferredSize(new Dimension(80, 35));
         btnAdmin.setBackground(new Color(255, 165, 0)); 
         btnAdmin.setForeground(Color.WHITE);
-        btnAdmin.setFont(new Font("Arial", Font.BOLD, 12));
+        btnAdmin.setFont(new Font("Arial", Font.BOLD, 11));
         btnAdmin.setFocusPainted(false);
+        btnAdmin.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 130, 0), 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
         
         btnAdmin.addActionListener(e -> {
             Page_Administration adminPage = new Page_Administration(emailUtilisateur);
@@ -82,12 +90,32 @@ public class Page_Principale extends JFrame {
             this.dispose();
         });
         
+        // Ajouter au panel des icônes utilisateur
         Component[] components = headerPanel.getComponents();
         for (Component comp : components) {
-            if (comp instanceof JPanel && ((JPanel) comp).getComponentCount() > 0) {
-                JPanel iconsPanel = (JPanel) comp;
-                iconsPanel.add(btnAdmin, 0);
-                break;
+            if (comp instanceof JPanel) {
+                JPanel panel = (JPanel) comp;
+                // Chercher le panel avec les icônes utilisateur
+                for (Component subComp : panel.getComponents()) {
+                    if (subComp instanceof JPanel) {
+                        JPanel subPanel = (JPanel) subComp;
+                        if (subPanel.getComponentCount() > 0) {
+                            // Vérifier si c'est le panel des icônes
+                            boolean hasStationnement = false;
+                            for (Component iconComp : subPanel.getComponents()) {
+                                if (iconComp == btnStationnement) {
+                                    hasStationnement = true;
+                                    break;
+                                }
+                            }
+                            if (hasStationnement) {
+                                subPanel.add(btnAdmin, 0); // Ajouter au début
+                                subPanel.add(Box.createRigidArea(new Dimension(10, 0)));
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
         
@@ -98,30 +126,32 @@ public class Page_Principale extends JFrame {
     private JPanel creerBarrePanel() {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(240, 240, 240));
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20)); // Bordures réduites
-        headerPanel.setPreferredSize(new Dimension(1200, 100)); // Hauteur réduite
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        headerPanel.setPreferredSize(new Dimension(1300, 90)); 
         
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        searchPanel.setBackground(new Color(240, 240, 240));
+        // PANEL GAUCHE : Recherche
+        JPanel panelGauche = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        panelGauche.setBackground(new Color(240, 240, 240));
         
+        // Champ de recherche
         searchField = new JTextField();
-        searchField.setPreferredSize(new Dimension(300, 35)); // Hauteur réduite
+        searchField.setPreferredSize(new Dimension(250, 38));
         searchField.setFont(new Font("Arial", Font.PLAIN, 14));
         searchField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            BorderFactory.createEmptyBorder(6, 10, 6, 10)
+            BorderFactory.createLineBorder(new Color(180, 180, 180)),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
         searchField.setText("Rechercher un parking...");
         searchField.setForeground(Color.GRAY);
         
-        searchField.addFocusListener(new java.awt.event.FocusAdapter() {
-            public void focusGained(java.awt.event.FocusEvent evt) {
+        searchField.addFocusListener(new FocusAdapter() {
+            public void focusGained(FocusEvent evt) {
                 if (searchField.getText().equals("Rechercher un parking...")) {
                     searchField.setText("");
                     searchField.setForeground(Color.BLACK);
                 }
             }
-            public void focusLost(java.awt.event.FocusEvent evt) {
+            public void focusLost(FocusEvent evt) {
                 if (searchField.getText().isEmpty()) {
                     searchField.setText("Rechercher un parking...");
                     searchField.setForeground(Color.GRAY);
@@ -129,64 +159,269 @@ public class Page_Principale extends JFrame {
             }
         });
         
+        // Bouton de recherche
         btnSearch = new JButton();
         btnSearch.setBackground(Color.WHITE);
-        btnSearch.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-        btnSearch.setPreferredSize(new Dimension(40, 35)); // Hauteur réduite
+        btnSearch.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
+        btnSearch.setPreferredSize(new Dimension(40, 38));
         btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        JLabel lblLoupe = chargerIconeLabel("/images/loupe.png", 16, 16, "");
-        btnSearch.add(lblLoupe);
+        // Icône loupe ou texte
+        try {
+            java.net.URL imageUrl = getClass().getResource("/images/loupe.png");
+            if (imageUrl != null) {
+                ImageIcon iconOriginal = new ImageIcon(imageUrl);
+                Image imageRedimensionnee = iconOriginal.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                JLabel lblLoupe = new JLabel(new ImageIcon(imageRedimensionnee), SwingConstants.CENTER);
+                btnSearch.add(lblLoupe);
+            } else {
+                btnSearch.setText("🔍");
+                btnSearch.setFont(new Font("Arial", Font.PLAIN, 14));
+            }
+        } catch (Exception e) {
+            btnSearch.setText("🔍");
+            btnSearch.setFont(new Font("Arial", Font.PLAIN, 14));
+        }
         
-        searchPanel.add(searchField);
-        searchPanel.add(btnSearch);
+        panelGauche.add(searchField);
+        panelGauche.add(btnSearch);
+        if (usager != null && usager.isAdmin()) {
+            // Espace entre la recherche et le bouton admin
+            panelGauche.add(Box.createRigidArea(new Dimension(15, 0)));
+            
+            // Bouton Admin
+            JButton btnAdmin = new JButton("Admin");
+            btnAdmin.setPreferredSize(new Dimension(90, 38));
+            btnAdmin.setBackground(new Color(255, 165, 0)); // Orange
+            btnAdmin.setForeground(Color.WHITE);
+            btnAdmin.setFont(new Font("Arial", Font.BOLD, 12));
+            btnAdmin.setFocusPainted(false);
+            btnAdmin.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 130, 0), 2),
+                BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            ));
+            
+            btnAdmin.addActionListener(e -> {
+                Page_Administration adminPage = new Page_Administration(emailUtilisateur);
+                adminPage.setVisible(true);
+                this.dispose();
+            });
+            
+            // Effet hover
+            btnAdmin.addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent evt) {
+                    btnAdmin.setBackground(new Color(255, 140, 0));
+                }
+                public void mouseExited(MouseEvent evt) {
+                    btnAdmin.setBackground(new Color(255, 165, 0));
+                }
+            });
+            
+            panelGauche.add(btnAdmin);
+        }
+        // PANEL CENTRE : Zones
+        JPanel panelCentre = new JPanel();
+        panelCentre.setBackground(new Color(240, 240, 240));
+        panelCentre.setLayout(new BoxLayout(panelCentre, BoxLayout.Y_AXIS));
         
-        JPanel iconsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
-        iconsPanel.setBackground(new Color(240, 240, 240));
+        // Titre des zones
+        JLabel lblTitreZones = new JLabel("Afficher une zone:");
+        lblTitreZones.setFont(new Font("Arial", Font.BOLD, 12));
+        lblTitreZones.setForeground(Color.DARK_GRAY);
+        lblTitreZones.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelCentre.add(lblTitreZones);
         
+        // Panel des boutons de zones
+        JPanel panelBoutonsZones = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        panelBoutonsZones.setBackground(new Color(240, 240, 240));
+        panelBoutonsZones.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        
+        // Bouton pour masquer toutes les zones
+        JButton btnMasquerZones = new JButton("X");
+        btnMasquerZones.setToolTipText("Masquer toutes les zones");
+        btnMasquerZones.setPreferredSize(new Dimension(35, 35));
+        btnMasquerZones.setBackground(new Color(220, 220, 220));
+        btnMasquerZones.setFont(new Font("Arial", Font.BOLD, 14));
+        btnMasquerZones.setFocusPainted(false);
+        btnMasquerZones.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.DARK_GRAY, 1),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        
+        btnMasquerZones.addActionListener(e -> {
+            if (cartePanel != null) {
+                cartePanel.cacherZone();
+                // Réinitialiser tous les boutons
+                for (JButton btn : boutonsZones.values()) {
+                    btn.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+                }
+            }
+        });
+        
+        panelBoutonsZones.add(btnMasquerZones);
+        panelBoutonsZones.add(Box.createRigidArea(new Dimension(5, 0)));
+        
+        // Définition des zones avec vos PNG
+        String[][] zones = {
+            {"Zone Jaune", "ZJ", "/images/ZJ.png", "255,193,7"},
+            {"Zone Rouge", "ZR", "/images/ZR.png", "220,53,69"},
+            {"Zone Orange", "ZO", "/images/ZO.png", "255,165,0"},
+            {"Zone Bleue", "ZB", "/images/ZB.png", "52,152,219"},
+            {"Zone Verte", "ZV", "/images/ZV.png", "60,179,113"}
+        };
+        
+        // Créer un bouton pour chaque zone
+        for (String[] zone : zones) {
+            String nomZone = zone[0];
+            String codeZone = zone[1];
+            String cheminImage = zone[2];
+            Color couleur = parseCouleur(zone[3]);
+            
+            JButton btnZone = new JButton(codeZone);
+            btnZone.setToolTipText(nomZone + " - Cliquez pour afficher");
+            btnZone.setPreferredSize(new Dimension(38, 38));
+            btnZone.setBackground(couleur);
+            btnZone.setForeground(Color.WHITE);
+            btnZone.setFont(new Font("Arial", Font.BOLD, 11));
+            btnZone.setFocusPainted(false);
+            btnZone.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+            
+            // Effet de survol
+            btnZone.addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent evt) {
+                    btnZone.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+                }
+                public void mouseExited(MouseEvent evt) {
+                    // Ne pas changer si c'est la zone active
+                    if (cartePanel != null && cartePanel.isZoneVisible() && 
+                        cartePanel.getCodeZoneActuelle() != null &&
+                        cartePanel.getCodeZoneActuelle().equals(codeZone)) {
+                        btnZone.setBorder(BorderFactory.createLineBorder(Color.BLACK, 3));
+                    } else {
+                        btnZone.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+                    }
+                }
+            });
+            
+            // Stocker la référence
+            boutonsZones.put(codeZone, btnZone);
+            
+            btnZone.addActionListener(e -> {
+                if (cartePanel != null) {
+                    // Afficher la zone avec opacité fixe à 50%
+                    boolean success = cartePanel.afficherZone(nomZone, codeZone, cheminImage, 0.5f);
+                    
+                    if (success) {
+                        // Mettre en surbrillance le bouton sélectionné
+                        for (Map.Entry<String, JButton> entry : boutonsZones.entrySet()) {
+                            JButton btn = entry.getValue();
+                            if (entry.getKey().equals(codeZone)) {
+                                btn.setBorder(BorderFactory.createLineBorder(Color.BLACK, 3));
+                            } else {
+                                btn.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+                            }
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(Page_Principale.this,
+                            "<html><b>Impossible de charger la zone " + codeZone + "</b><br>" +
+                            "Vérifiez que le fichier <i>" + cheminImage + "</i><br>" +
+                            "existe dans le dossier <i>images/</i></html>",
+                            "Erreur de chargement",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+            
+            panelBoutonsZones.add(btnZone);
+            panelBoutonsZones.add(Box.createRigidArea(new Dimension(2, 0)));
+        }
+        
+        // Bouton "Info zones"
+        JButton btnInfoZones = new JButton("Zones ???");
+        btnInfoZones.setToolTipText("Information sur les zones");
+        btnInfoZones.setPreferredSize(new Dimension(95, 35));
+        btnInfoZones.setBackground(new Color(52, 152, 219));
+        btnInfoZones.setForeground(Color.WHITE);
+        btnInfoZones.setFont(new Font("Arial", Font.BOLD, 14));
+        btnInfoZones.setFocusPainted(false);
+        btnInfoZones.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(41, 128, 185), 1),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        
+        btnInfoZones.addActionListener(e -> {
+            ExplicationZoneToulouse fenetreZones = new ExplicationZoneToulouse();
+            fenetreZones.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            fenetreZones.setVisible(true);
+        });
+        
+        panelBoutonsZones.add(Box.createRigidArea(new Dimension(10, 0)));
+        panelBoutonsZones.add(btnInfoZones);
+        
+        panelCentre.add(panelBoutonsZones);
+        
+        // PANEL DROIT : Icônes utilisateur
+        JPanel panelDroit = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        panelDroit.setBackground(new Color(240, 240, 240));
+        
+        // Bouton Stationnement
         btnStationnement = new JButton();
         btnStationnement.setLayout(new BorderLayout());
         btnStationnement.setBackground(new Color(240, 240, 240));
-        btnStationnement.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        btnStationnement.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         btnStationnement.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnStationnement.setPreferredSize(new Dimension(120, 80)); 
+        btnStationnement.setPreferredSize(new Dimension(140, 70));
         
-        JLabel lblIconePark = chargerIconeLabel("/images/parking.png", 35, 35, "S");
+        // Icône stationnement
+        JLabel lblIconePark = chargerIconeLabel("/images/parking.png", 40, 40, "P");
         JLabel lblTextPark = new JLabel("Stationnement", SwingConstants.CENTER);
-        lblTextPark.setFont(new Font("Arial", Font.PLAIN, 11)); 
+        lblTextPark.setFont(new Font("Arial", Font.PLAIN, 12));
         lblTextPark.setForeground(Color.DARK_GRAY);
         
         btnStationnement.add(lblIconePark, BorderLayout.CENTER);
         btnStationnement.add(lblTextPark, BorderLayout.SOUTH);
         
+        // Bouton Mon Compte
         btnUtilisateur = new JButton();
         btnUtilisateur.setLayout(new BorderLayout());
         btnUtilisateur.setBackground(new Color(240, 240, 240));
-        btnUtilisateur.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        btnUtilisateur.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         btnUtilisateur.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnUtilisateur.setPreferredSize(new Dimension(120, 80)); 
+        btnUtilisateur.setPreferredSize(new Dimension(140, 70));
         
-        JLabel lblIconeUser = chargerIconeLabel("/images/utilisateur.png", 35, 35, "U"); 
+        // Icône utilisateur
+        JLabel lblIconeUser = chargerIconeLabel("/images/utilisateur.png", 40, 40, "U");
         JLabel lblTextUser = new JLabel("Mon Compte", SwingConstants.CENTER);
-        lblTextUser.setFont(new Font("Arial", Font.PLAIN, 11));
+        lblTextUser.setFont(new Font("Arial", Font.PLAIN, 10));
         lblTextUser.setForeground(Color.DARK_GRAY);
         
         btnUtilisateur.add(lblIconeUser, BorderLayout.CENTER);
         btnUtilisateur.add(lblTextUser, BorderLayout.SOUTH);
         
-        iconsPanel.add(btnStationnement);
-        iconsPanel.add(btnUtilisateur);
+        panelDroit.add(btnStationnement);
+        panelDroit.add(btnUtilisateur);
         
-        headerPanel.add(searchPanel, BorderLayout.WEST);
-        headerPanel.add(iconsPanel, BorderLayout.EAST);
+        // ========== ASSEMBLAGE FINAL ==========
+        headerPanel.add(panelGauche, BorderLayout.WEST);
+        headerPanel.add(panelCentre, BorderLayout.CENTER);
+        headerPanel.add(panelDroit, BorderLayout.EAST);
         
         return headerPanel;
+    }
+    
+    private Color parseCouleur(String rgb) {
+        String[] parts = rgb.split(",");
+        return new Color(
+            Integer.parseInt(parts[0]),
+            Integer.parseInt(parts[1]),
+            Integer.parseInt(parts[2])
+        );
     }
     
     private JPanel creerCenterPanel() {
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setBackground(Color.WHITE);
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Bordures réduites
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         try {
             // Charger l'image de la carte
@@ -195,41 +430,43 @@ public class Page_Principale extends JFrame {
                 throw new Exception("Image Map_Toulouse.jpg non trouvée");
             }
             
-            // Créer le panneau de carte avec la nouvelle classe
+            // Créer le panneau de carte
             cartePanel = new CartePanel(imageUrl, emailUtilisateur);
             
-            // NOUVEAU: Ajouter la carte directement sans JScrollPane
+            // Ajouter la carte
             centerPanel.add(cartePanel, BorderLayout.CENTER);
             
             // Panel de contrôle simplifié en haut de la carte
             JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-            controlPanel.setBackground(new Color(255, 255, 255, 180)); // Transparent
+            controlPanel.setBackground(new Color(255, 255, 255, 180));
             controlPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
             
-            // Boutons de contrôle intégrés
+            // Boutons de contrôle
             JButton btnZoomIn = new JButton("+");
             JButton btnZoomOut = new JButton("-");
-            JButton btnResetZoom = new JButton("Repull-Up");
-            
-            // Style minimaliste
+            JButton btnResetZoom = new JButton("Reset");
+
+   
             for (JButton btn : new JButton[]{btnZoomIn, btnZoomOut, btnResetZoom}) {
-                btn.setPreferredSize(new Dimension(40, 30));
                 btn.setFont(new Font("Arial", Font.BOLD, 12));
                 btn.setBackground(new Color(70, 130, 180));
                 btn.setForeground(Color.WHITE);
                 btn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
                 btn.setFocusPainted(false);
+                if (btn == btnResetZoom) {
+                    btn.setPreferredSize(new Dimension(60, 30));
+                } else {
+                    btn.setPreferredSize(new Dimension(40, 30));
+                }
             }
             
             btnZoomIn.addActionListener(e -> cartePanel.zoomIn());
             btnZoomOut.addActionListener(e -> cartePanel.zoomOut());
             btnResetZoom.addActionListener(e -> cartePanel.resetZoom());
             
-            
             controlPanel.add(btnZoomIn);
             controlPanel.add(btnZoomOut);
             controlPanel.add(btnResetZoom);
-
             
             // Positionner le contrôle en haut de la carte
             cartePanel.setLayout(new BorderLayout());
@@ -253,14 +490,14 @@ public class Page_Principale extends JFrame {
     private JPanel creerBottomPanel() {
         JPanel bottomPanel = new JPanel();
         bottomPanel.setBackground(Color.WHITE);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 20, 10, 20)); // Bordures réduites
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 20, 10, 20));
         
         btnPreparerStationnement = new JButton("Préparer un stationnement");
-        btnPreparerStationnement.setFont(new Font("Arial", Font.BOLD, 13)); // Taille réduite
+        btnPreparerStationnement.setFont(new Font("Arial", Font.BOLD, 13));
         btnPreparerStationnement.setBackground(new Color(70, 130, 180));
         btnPreparerStationnement.setForeground(Color.WHITE);
         btnPreparerStationnement.setFocusPainted(false);
-        btnPreparerStationnement.setBorder(BorderFactory.createEmptyBorder(8, 25, 8, 25)); // Padding réduit
+        btnPreparerStationnement.setBorder(BorderFactory.createEmptyBorder(8, 25, 8, 25));
         btnPreparerStationnement.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
         bottomPanel.add(btnPreparerStationnement);
@@ -351,16 +588,17 @@ public class Page_Principale extends JFrame {
         return searchField;
     }
     
+    // Getter pour le panneau de carte
+    public CartePanel getCartePanel() {
+        return cartePanel;
+    }
+    
     @Override
     public void dispose() {
         if (timer != null) {
             timer.stop();
         }
         super.dispose();
-    }
-
-    public CartePanel getCartePanel() {
-        return cartePanel;
     }
     
     public static void main(String[] args) {

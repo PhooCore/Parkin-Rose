@@ -102,11 +102,9 @@ public class AbonnementDAO {
             
             pstmt.setInt(1, idUsager);
             int rowsAffected = pstmt.executeUpdate();
-            System.out.println("DEBUG: " + rowsAffected + " abonnements supprimés pour l'usager " + idUsager);
             return true;
             
         } catch (SQLException e) {
-            System.err.println("DEBUG: Erreur lors de la suppression des abonnements: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -119,22 +117,18 @@ public class AbonnementDAO {
      * @return true si l'ajout a réussi, false sinon
      */
     public static boolean ajouterAbonnementUtilisateur(int idUsager, String idAbonnement) {
-        System.out.println("DEBUG: Tentative d'ajout d'abonnement - Usager: " + idUsager + ", Abonnement: " + idAbonnement);
         
         // Vérifier si l'abonnement existe
         if (!abonnementExiste(idAbonnement)) {
-            System.err.println("DEBUG: L'abonnement " + idAbonnement + " n'existe pas dans la table Abonnement!");
             return false;
         }
         
         // Vérifier si l'utilisateur existe (optionnel mais recommandé)
         if (!usagerExiste(idUsager)) {
-            System.err.println("DEBUG: L'utilisateur " + idUsager + " n'existe pas dans la table Usager!");
             return false;
         }
         
         // D'abord supprimer les anciens abonnements
-        System.out.println("DEBUG: Suppression des anciens abonnements...");
         supprimerAbonnementsUtilisateur(idUsager);
         
         String sql = "INSERT INTO Appartenir (id_usager, id_abonnement, date_debut) VALUES (?, ?, CURDATE())";
@@ -142,20 +136,14 @@ public class AbonnementDAO {
         try (Connection conn = MySQLConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            System.out.println("DEBUG: Préparation de la requête SQL: " + sql);
             pstmt.setInt(1, idUsager);
             pstmt.setString(2, idAbonnement);
             
-            System.out.println("DEBUG: Exécution de la requête...");
             int rowsAffected = pstmt.executeUpdate();
-            System.out.println("DEBUG: Lignes affectées: " + rowsAffected);
             
             return rowsAffected > 0;
             
         } catch (SQLException e) {
-            System.err.println("DEBUG: Erreur SQL lors de l'ajout d'abonnement: " + e.getMessage());
-            System.err.println("DEBUG: Code d'erreur: " + e.getErrorCode());
-            System.err.println("DEBUG: État SQL: " + e.getSQLState());
             e.printStackTrace();
             return false;
         }
@@ -177,7 +165,6 @@ public class AbonnementDAO {
             
             if (rs.next()) {
                 int count = rs.getInt(1);
-                System.out.println("DEBUG: L'utilisateur " + idUsager + " a " + count + " abonnement(s)");
                 return count > 0;
             }
         } catch (SQLException e) {
@@ -202,7 +189,6 @@ public class AbonnementDAO {
             
             if (rs.next()) {
                 int count = rs.getInt(1);
-                System.out.println("DEBUG: L'abonnement " + idAbonnement + " existe? " + (count > 0));
                 return count > 0;
             }
         } catch (SQLException e) {

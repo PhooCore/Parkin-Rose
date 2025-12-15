@@ -17,7 +17,7 @@ public class TarifParkingDAO {
     };
     
     /**
-     * Récupère la liste des parkings relais (gratuits mais accessibles seulement si on a une carte pastel)
+     * Récupère la liste des parkings relais (gratuits mais accessibles seulement si on a une carte Tisséo)
      */
     public static List<String> getParkingsRelais() {
         List<String> parkingsRelais = new ArrayList<>();
@@ -106,7 +106,7 @@ public class TarifParkingDAO {
         tarifs.put("PARK_ARNAUD_BERNARD", 0.38); // 1.50€/h
         tarifs.put("PARK_CARMES", 0.63);     // 2.50€/h
         
-        // Parkings relais (tarif normal si pas de titre transport)
+        // Parkings relais (tarif normal si pas de carte Tisséo)
         tarifs.put("PARK_SEPT_DENIERS", 0.25); // 1€/h
         tarifs.put("PARK_BAGATELLE", 0.25);  // 1€/h
         tarifs.put("PARK_JOLIMONT", 0.25);   // 1€/h
@@ -180,6 +180,7 @@ public class TarifParkingDAO {
         
         return arriveeValide && departValide && dureeValide;
     }
+    
     /**
      * Vérifie si une heure donnée est dans la plage du tarif soirée (pour affichage)
      */
@@ -200,6 +201,7 @@ public class TarifParkingDAO {
         
         return false;
     }
+    
     /**
      * Formate l'affichage des tarifs pour l'interface utilisateur
      */
@@ -208,6 +210,13 @@ public class TarifParkingDAO {
         
         if (estParkingGratuit(idParking)) {
             sb.append("Parking gratuit");
+            return sb.toString();
+        }
+        
+        if (estParkingRelais(idParking)) {
+            sb.append("🚫 PARKING RÉSERVÉ\n");
+            sb.append("Exclusivement réservé aux détenteurs\n");
+            sb.append("d'une carte Tisséo (Pastel)");
             return sb.toString();
         }
         
@@ -220,14 +229,9 @@ public class TarifParkingDAO {
             sb.append("\n(Arrivée 19h30-minuit, départ avant 3h)");
         }
         
-        if (estParkingRelais(idParking)) {
-            sb.append("\n");
-            sb.append("Parking relais: Gratuit avec titre de transport");
-            sb.append("\nSans titre: ").append(String.format("%.2f€/h", tarifHoraire));
-        }
-        
         return sb.toString();
     }
+    
     /**
      * Donne la description textuelle du tarif soirée
      */
@@ -238,6 +242,7 @@ public class TarifParkingDAO {
                "- Départ avant 3h le lendemain\n" +
                "- Durée maximale: 8 heures";
     }
+    
     /**
      * Vérifie si le parking propose le tarif soirée
      */
@@ -273,7 +278,6 @@ public class TarifParkingDAO {
     /**
      * Vérifie si c'est un parking relais
      */
-
     public static boolean estParkingRelais(String idParking) {
         return getParkingsRelais().contains(idParking);
     }
@@ -357,4 +361,5 @@ public class TarifParkingDAO {
         
         return infos;
     }
+    
 }

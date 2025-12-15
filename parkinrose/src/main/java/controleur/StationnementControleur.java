@@ -30,7 +30,7 @@ public class StationnementControleur {
     }
 
     // =============================================
-    // NOUVELLES MÉTHODES POUR LA GESTION DES ABONNEMENTS
+    // MÉTHODES POUR LA GESTION DES ABONNEMENTS
     // =============================================
 
     /**
@@ -39,20 +39,14 @@ public class StationnementControleur {
      * @return true si l'usager a un abonnement actif
      */
     public boolean usagerAUnAbonnementActif(int idUsager) {
-        return AbonnementDAO.utilisateurAUnAbonnement(idUsager);
-    }
-
-    /**
-     * Récupère l'ID de l'abonnement actif de l'usager.
-     * @param idUsager ID de l'usager
-     * @return ID de l'abonnement actif, ou null si aucun
-     */
-    public String getIdAbonnementActif(int idUsager) {
+        // Vérifier via la DAO si l'utilisateur a un abonnement actif
         List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(idUsager);
-        if (abonnements.isEmpty()) {
-            return null;
+        for (Abonnement abonnement : abonnements) {
+            if (abonnement.estActif()) {
+                return true;
+            }
         }
-        return abonnements.get(0).getIdAbonnement();
+        return false;
     }
 
     /**
@@ -62,14 +56,31 @@ public class StationnementControleur {
      */
     public double getTarifAbonnement(int idUsager) {
         List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(idUsager);
-        if (abonnements.isEmpty()) {
-            return 0.0;
+        for (Abonnement abonnement : abonnements) {
+            if (abonnement.estActif()) {
+                return abonnement.getTarifAbonnement();
+            }
         }
-        return abonnements.get(0).getTarifAbonnement();
+        return 0.0;
+    }
+
+    /**
+     * Récupère l'ID de l'abonnement actif de l'usager.
+     * @param idUsager ID de l'usager
+     * @return ID de l'abonnement actif, ou null si aucun
+     */
+    public String getIdAbonnementActif(int idUsager) {
+        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(idUsager);
+        for (Abonnement abonnement : abonnements) {
+            if (abonnement.estActif()) {
+                return abonnement.getIdAbonnement();
+            }
+        }
+        return null;
     }
 
     // =============================================
-    // MÉTHODES EXISTANTES (sans modification)
+    // MÉTHODES EXISTANTES
     // =============================================
 
     public Stationnement getStationnementActif() {
@@ -104,9 +115,9 @@ public class StationnementControleur {
         if (usagerAUnAbonnementActif(usager.getIdUsager())) {
             double tarifAbonnement = getTarifAbonnement(usager.getIdUsager());
             if (tarifAbonnement > 0) {
-                cout = tarifAbonnement; // Appliquer le tarif de l'abonnement
+                cout = tarifAbonnement;
             } else if (tarifAbonnement == 0.0) {
-                cout = 0.0; // Gratuit
+                cout = 0.0;
             }
         }
 
@@ -164,62 +175,7 @@ public class StationnementControleur {
             typeVehicule,
             plaqueImmatriculation,
             idParking,
-            LocalDateTime.now(),
-            Abonnement.class.getName());
-
-        if (succes) {
-            JOptionPane.showMessageDialog(pageParking,
-                "Réservation confirmée !\n\n" +
-                "Votre place est réservée dans le parking " + parking.getLibelleParking() + ".\n" +
-                "N'oubliez pas de valider votre sortie pour le paiement.",
-                "Réservation réussie",
-                JOptionPane.INFORMATION_MESSAGE);
-
-            Page_Principale pagePrincipale = new Page_Principale(emailUtilisateur);
-            pagePrincipale.setVisible(true);
-            pageParking.dispose();
-            return true;
-        } else {
-            JOptionPane.showMessageDialog(pageParking,
-                "Erreur lors de la réservation. Veuillez réessayer.",
-                "Erreur",
-                JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-    }
-
-    public boolean preparerStationnementParking(String typeVehicule, String plaqueImmatriculation,
-                                               String idParking, Page_Garer_Parking pageParking, String idAbonnement) {
-
-        if (!validerStationnementParking(plaqueImmatriculation, typeVehicule, idParking, pageParking)) {
-            return false;
-        }
-
-        Parking parking = ParkingDAO.getParkingById(idParking);
-        if (parking == null) {
-            JOptionPane.showMessageDialog(pageParking,
-                "Parking non trouvé",
-                "Erreur",
-                JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-
-        if (parking.getPlacesDisponibles() <= 0) {
-            JOptionPane.showMessageDialog(pageParking,
-                "Aucune place disponible dans ce parking",
-                "Parking complet",
-                JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-
-        boolean succes = StationnementDAO.creerStationnementParking(
-            usager.getIdUsager(),
-            typeVehicule,
-            plaqueImmatriculation,
-            idParking,
-            LocalDateTime.now(),
-            idAbonnement // Passer l'ID de l'abonnement
-        );
+            LocalDateTime.now());
 
         if (succes) {
             JOptionPane.showMessageDialog(pageParking,
@@ -336,30 +292,20 @@ public class StationnementControleur {
 
     public boolean creerStationnementVoirieGratuit(String typeVehicule, String plaque,
             String idZone, int heures, int minutes) {
-        System.out.println("=== CRÉATION STATIONNEMENT VOIRIE GRATUIT ===");
-        System.out.println("Type véhicule: " + typeVehicule);
-        System.out.println("Plaque: " + plaque);
-        System.out.println("Zone: " + idZone);
-        System.out.println("Durée: " + heures + "h" + minutes + "min");
-
         try {
             if (this.usager == null) {
-                System.err.println("❌ Utilisateur non trouvé");
                 return false;
             }
 
             Zone zone = ZoneDAO.getZoneById(idZone);
             if (zone == null) {
-                System.err.println("❌ Zone non trouvée: " + idZone);
                 return false;
             }
 
             String idPaiement = "PAY_GRATUIT_" + System.currentTimeMillis();
-            System.out.println("ID Paiement généré: " + idPaiement);
 
             boolean paiementCree = creerPaiementGratuit(this.usager.getIdUsager(), idPaiement);
             if (!paiementCree) {
-                System.err.println("❌ Échec de la création du paiement gratuit");
                 return false;
             }
 
@@ -376,22 +322,15 @@ public class StationnementControleur {
             stationnement.setTypeStationnement("VOIRIE");
             stationnement.setStatutPaiement("PAYE");
             stationnement.setIdPaiement(idPaiement);
-
-            System.out.println("Création du stationnement pour l'usager: " + this.usager.getIdUsager());
-            System.out.println("Zone: " + zone.getLibelleZone());
-
             boolean succes = StationnementDAO.creerStationnementVoirie(stationnement);
 
             if (succes) {
-                System.out.println("✅ Stationnement gratuit créé avec succès !");
                 return true;
             } else {
-                System.err.println("❌ Échec de la création du stationnement");
                 return false;
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Erreur lors de la création du stationnement gratuit: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -399,7 +338,6 @@ public class StationnementControleur {
 
     private boolean creerPaiementGratuit(int idUsager, String idPaiement) {
         try {
-            System.out.println("Création du paiement gratuit: " + idPaiement);
 
             modele.Paiement paiement = new modele.Paiement();
             paiement.setIdPaiement(idPaiement);
@@ -415,7 +353,6 @@ public class StationnementControleur {
 
             boolean paiementCree = PaiementDAO.enregistrerPaiement(paiement);
             if (paiementCree) {
-                System.out.println("✅ Paiement gratuit enregistré avec succès");
                 return true;
             } else {
                 System.err.println("❌ Échec de l'enregistrement du paiement gratuit");

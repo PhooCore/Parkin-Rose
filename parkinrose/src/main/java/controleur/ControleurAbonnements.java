@@ -134,7 +134,6 @@ public class ControleurAbonnements implements ActionListener {
         
         
         if (!estActionValide(etat, action)) {
-            System.out.println("Action non valide dans l'état " + etat);
             return;
         }
         

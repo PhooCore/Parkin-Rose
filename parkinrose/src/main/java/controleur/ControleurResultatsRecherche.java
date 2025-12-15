@@ -4,6 +4,7 @@ import ihm.Page_Garer_Parking;
 import ihm.Page_Resultats_Recherche;
 import modele.Parking;
 import modele.dao.TarifParkingDAO;
+import modele.dao.UsagerDAO;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -105,10 +106,48 @@ public class ControleurResultatsRecherche implements ActionListener {
     private void selectionnerParking(int index) {
         if (index >= 0 && index < vue.parkingsFiltres.size()) {
             Parking parking = vue.parkingsFiltres.get(index);
-
             boolean estRelais = TarifParkingDAO.estParkingRelais(parking.getIdParking());
-            boolean estExceptionSeptDeniers = "PARK_SEPT_DENIERS".equals(parking.getIdParking());
 
+            // Pour les parkings relais, vérifier OBLIGATOIREMENT la carte Tisséo
+            if (estRelais) {
+                String carteTisseo = UsagerDAO.getCarteTisseoByUsager(
+                    UsagerDAO.getUsagerByEmail(vue.emailUtilisateur).getIdUsager());
+                
+                if (carteTisseo == null) {
+                    // L'utilisateur n'a pas de carte Tisséo -> INTERDIT de stationner
+                    Object[] options = {"Ajouter une carte Tisséo", "Annuler"};
+                    int choix = JOptionPane.showOptionDialog(
+                        vue,
+                        "🚫  ACCÈS IMPOSSIBLE\n\n" +
+                        parking.getLibelleParking() + "\n" +
+                        "(" + parking.getAdresseParking() + ")\n\n" +
+                        "❌  Ce parking relais est exclusivement réservé\n" +
+                        "aux détenteurs d'une carte Tisséo (Pastel).\n\n" +
+                        "Vous ne pouvez pas stationner dans ce parking\n" +
+                        "sans présenter votre carte Tisséo.\n\n" +
+                        "Veuillez ajouter votre carte Tisséo à votre compte\n" +
+                        "pour accéder à ce parking.",
+                        "Accès refusé - Parking réservé",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.ERROR_MESSAGE,
+                        null,
+                        options,
+                        options[0]
+                    );
+                    
+                    if (choix == JOptionPane.YES_OPTION) {
+                        // Ouvrir la page utilisateur pour ajouter une carte
+                        ihm.Page_Utilisateur pageUtilisateur = new ihm.Page_Utilisateur(vue.emailUtilisateur);
+                        pageUtilisateur.setVisible(true);
+                    }
+                    // Dans tous les cas, on ne peut pas continuer vers le stationnement
+                    return;
+                }
+            }
+            
+            // Si on arrive ici, soit ce n'est pas un parking relais,
+            // soit c'est un parking relais ET l'utilisateur a une carte Tisséo
+            
             StringBuilder message = new StringBuilder();
             message.append("Voulez-vous préparer un stationnement pour :\n")
                    .append(parking.getLibelleParking()).append("\n")
@@ -126,16 +165,24 @@ public class ControleurResultatsRecherche implements ActionListener {
             message.append("Hauteur maximale: ")
                    .append(parking.getHauteurParking()).append("m\n");
 
-            if (estRelais && !estExceptionSeptDeniers) {
-                message.append("\n⚠️ Parking relais\n")
-                       .append("Accessible uniquement aux détenteurs d’une carte Tisséo.");
+            // Afficher le statut Tisséo pour les parkings relais
+            if (estRelais) {
+                String carteTisseo = UsagerDAO.getCarteTisseoByUsager(
+                    UsagerDAO.getUsagerByEmail(vue.emailUtilisateur).getIdUsager());
+                
+                if (carteTisseo != null) {
+                    message.append("\n✅  Carte Tisséo détectée : ")
+                           .append(carteTisseo.substring(0, 4)).append("******")
+                           .append("\nStationnement gratuit");
+                }
             }
 
             int choix = JOptionPane.showConfirmDialog(
                 vue,
                 message.toString(),
                 "Confirmation",
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
             );
 
             if (choix == JOptionPane.YES_OPTION) {
@@ -145,8 +192,6 @@ public class ControleurResultatsRecherche implements ActionListener {
             }
         }
     }
-
-
     
     private void retourAccueil() {
         ihm.Page_Principale pagePrincipale = new ihm.Page_Principale(vue.emailUtilisateur);

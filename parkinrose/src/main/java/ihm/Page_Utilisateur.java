@@ -10,11 +10,13 @@ import modele.dao.PaiementDAO;
 import modele.dao.StationnementDAO;
 import modele.dao.ZoneDAO;
 import modele.dao.ParkingDAO;
+import modele.dao.VehiculeUsagerDAO;
 import modele.Abonnement;
 import modele.Paiement;
 import modele.Stationnement;
 import modele.Zone;
 import modele.Parking;
+import modele.VehiculeUsager;
 import java.awt.*;
 import java.util.List;
 
@@ -28,6 +30,8 @@ public class Page_Utilisateur extends JFrame {
     private JButton btnModifierMdp;
     private JButton btnDeconnexion;
     private JButton btnRetour;
+    private JButton btnGestionVehicules;
+    private JLabel lblInfoVehicules;
     
     public Page_Utilisateur(String email, boolean rafraichir) {
         this.emailUtilisateur = email;
@@ -47,7 +51,7 @@ public class Page_Utilisateur extends JFrame {
     private void initialisePage() {
         this.setTitle("Mon Compte");
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setSize(800, 650);
+        this.setSize(800, 700); // Augmenté la hauteur pour plus d'espace
         this.setLocationRelativeTo(null);
         
         JPanel mainPanel = new JPanel();
@@ -76,11 +80,18 @@ public class Page_Utilisateur extends JFrame {
         JPanel panelStationnements = creerOngletStationnements();
         onglets.addTab("Historique des stationnements", panelStationnements);
         
+        // Onglet 4 : Gestion des véhicules
+        JPanel panelVehicules = creerOngletVehicules();
+        onglets.addTab("Mes véhicules", panelVehicules);
+        
         mainPanel.add(onglets, BorderLayout.CENTER);
         
         // Bouton retour
+        JPanel panelBoutonRetour = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panelBoutonRetour.setBackground(Color.WHITE);
         btnRetour = new JButton("Retour à l'accueil");
-        mainPanel.add(btnRetour, BorderLayout.SOUTH);
+        panelBoutonRetour.add(btnRetour);
+        mainPanel.add(panelBoutonRetour, BorderLayout.SOUTH);
         
         this.setContentPane(mainPanel);
     }
@@ -134,7 +145,7 @@ public class Page_Utilisateur extends JFrame {
             
             JLabel lblLibelle = new JLabel("Abonnement:");
             lblLibelle.setFont(new Font("Arial", Font.BOLD, 14));
-            lblLibelle.setPreferredSize(new Dimension(100, 25));
+            lblLibelle.setPreferredSize(new Dimension(120, 25));
             
             JLabel lblValeur = new JLabel("Aucun abonnement actif");
             lblValeur.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -156,19 +167,76 @@ public class Page_Utilisateur extends JFrame {
             panel.add(ligneAbonnement);
         }
         
+        panel.add(Box.createVerticalStrut(20));
+        
+        // Ajout carte Tisseo
+        String carteTisseo = UsagerDAO.getCarteTisseoByUsager(usager.getIdUsager());
+
+        if (carteTisseo == null) {
+            JPanel ligneCarte = new JPanel(new BorderLayout());
+            ligneCarte.setBackground(Color.WHITE);
+            ligneCarte.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+            JLabel lblLibelle = new JLabel("Carte Tisséo:");
+            lblLibelle.setFont(new Font("Arial", Font.BOLD, 14));
+            lblLibelle.setPreferredSize(new Dimension(120, 25));
+
+            JLabel lblValeur = new JLabel("Aucune carte Tisséo renseignée");
+            lblValeur.setFont(new Font("Arial", Font.PLAIN, 14));
+            lblValeur.setForeground(Color.RED);
+
+            JButton btnAjouter = new JButton("Ajouter une carte");
+            btnAjouter.addActionListener(e -> ouvrirPopupAjoutCarteTisseo());
+
+            ligneCarte.add(lblLibelle, BorderLayout.WEST);
+            ligneCarte.add(lblValeur, BorderLayout.CENTER);
+            ligneCarte.add(btnAjouter, BorderLayout.EAST);
+
+            panel.add(ligneCarte);
+
+        } else {
+            ajouterLigneInfo(panel, "Carte Tisséo:", carteTisseo);
+        }
+        
         panel.add(Box.createVerticalStrut(30));
         
-        //Ajout carte Tisseo
-        String carteTisseo = UsagerDAO.getCarteTisseoByUsager(usager.getIdUsager());
-        ajouterLigneInfo(panel, "Carte Tisséo:", carteTisseo);
+        // Section Véhicules (simplifiée)
+        JPanel panelVehiculesInfo = new JPanel(new BorderLayout());
+        panelVehiculesInfo.setBackground(Color.WHITE);
+        panelVehiculesInfo.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         
+        JLabel lblTitreVehicules = new JLabel("Véhicules enregistrés:");
+        lblTitreVehicules.setFont(new Font("Arial", Font.BOLD, 14));
         
+        // Compter le nombre de véhicules
+        List<VehiculeUsager> vehicules = VehiculeUsagerDAO.getVehiculesByUsager(usager.getIdUsager());
+        int nbVehicules = vehicules.size();
+        int nbVehiculesPrincipaux = 0;
+        for (VehiculeUsager v : vehicules) {
+            if (v.isEstPrincipal()) {
+                nbVehiculesPrincipaux++;
+            }
+        }
         
+        JLabel lblNbVehicules = new JLabel(nbVehicules + " véhicule(s) - " + nbVehiculesPrincipaux + " principal(aux)");
+        lblNbVehicules.setFont(new Font("Arial", Font.PLAIN, 12));
+        lblNbVehicules.setForeground(Color.BLUE);
         
+        panelVehiculesInfo.add(lblTitreVehicules, BorderLayout.WEST);
+        panelVehiculesInfo.add(lblNbVehicules, BorderLayout.EAST);
+        panel.add(panelVehiculesInfo);
         
-
+        panel.add(Box.createVerticalStrut(30));
         
         // Boutons d'action
+        btnGestionVehicules = new JButton("Gestion complète des véhicules");
+        btnGestionVehicules.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnGestionVehicules.setBackground(new Color(70, 130, 180));
+        btnGestionVehicules.setForeground(Color.WHITE);
+        
+        panel.add(btnGestionVehicules);
+        panel.add(Box.createVerticalStrut(20));
+        
         btnModifierMdp = new JButton("Modifier le mot de passe");
         btnModifierMdp.setAlignmentX(Component.CENTER_ALIGNMENT);
         // Le contrôleur gérera cet ActionListener
@@ -182,6 +250,159 @@ public class Page_Utilisateur extends JFrame {
         panel.add(btnModifierMdp);
         panel.add(Box.createVerticalStrut(10));
         panel.add(btnDeconnexion);
+        
+        return panel;
+    }
+    
+    private JPanel creerOngletVehicules() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setBackground(Color.WHITE);
+        
+        // Titre
+        JLabel lblTitre = new JLabel("Gestion des véhicules", SwingConstants.CENTER);
+        lblTitre.setFont(new Font("Arial", Font.BOLD, 16));
+        panel.add(lblTitre, BorderLayout.NORTH);
+        
+        // Liste des véhicules
+        DefaultListModel<VehiculeUsager> listModel = new DefaultListModel<>();
+        JList<VehiculeUsager> listVehicules = new JList<>(listModel);
+        listVehicules.setCellRenderer(new VehiculeRenderer());
+        listVehicules.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        JScrollPane scrollPane = new JScrollPane(listVehicules);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Vos véhicules"));
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Charger les véhicules
+        if (usager != null) {
+            List<VehiculeUsager> vehicules = VehiculeUsagerDAO.getVehiculesByUsager(usager.getIdUsager());
+            for (VehiculeUsager v : vehicules) {
+                listModel.addElement(v);
+            }
+        }
+        
+        // Panel boutons
+        JPanel panelBoutons = new JPanel(new GridLayout(1, 4, 10, 0));
+        panelBoutons.setBackground(Color.WHITE);
+        
+        JButton btnAjouter = new JButton("Ajouter");
+        JButton btnModifier = new JButton("Modifier");
+        JButton btnSupprimer = new JButton("Supprimer");
+        JButton btnDefinirPrincipal = new JButton("Définir principal");
+        
+        // Écouteurs d'événements
+        btnAjouter.addActionListener(e -> {
+            Page_Gestion_Vehicules pageGestion = new Page_Gestion_Vehicules(emailUtilisateur);
+            pageGestion.setVisible(true);
+            pageGestion.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent e) {
+                    // Rafraîchir la liste
+                    listModel.clear();
+                    List<VehiculeUsager> vehicules = VehiculeUsagerDAO.getVehiculesByUsager(usager.getIdUsager());
+                    for (VehiculeUsager v : vehicules) {
+                        listModel.addElement(v);
+                    }
+                }
+            });
+        });
+        
+        btnModifier.addActionListener(e -> {
+            VehiculeUsager vehicule = listVehicules.getSelectedValue();
+            if (vehicule != null) {
+                JOptionPane.showMessageDialog(this, 
+                    "Pour modifier un véhicule, veuillez utiliser la page de gestion complète.",
+                    "Information", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                Page_Gestion_Vehicules pageGestion = new Page_Gestion_Vehicules(emailUtilisateur);
+                pageGestion.setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Veuillez sélectionner un véhicule à modifier", 
+                    "Aucune sélection", 
+                    JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        btnSupprimer.addActionListener(e -> {
+            VehiculeUsager vehicule = listVehicules.getSelectedValue();
+            if (vehicule != null) {
+                int choix = JOptionPane.showConfirmDialog(this,
+                    "Êtes-vous sûr de vouloir supprimer ce véhicule ?\n" +
+                    "Plaque: " + vehicule.getPlaqueImmatriculation() + "\n" +
+                    "Type: " + vehicule.getTypeVehicule(),
+                    "Confirmation de suppression",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+                
+                if (choix == JOptionPane.YES_OPTION) {
+                    if (VehiculeUsagerDAO.supprimerVehicule(vehicule.getIdVehiculeUsager())) {
+                        listModel.removeElement(vehicule);
+                        JOptionPane.showMessageDialog(this,
+                            "Véhicule supprimé avec succès",
+                            "Suppression réussie",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Veuillez sélectionner un véhicule à supprimer", 
+                    "Aucune sélection", 
+                    JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        btnDefinirPrincipal.addActionListener(e -> {
+            VehiculeUsager vehicule = listVehicules.getSelectedValue();
+            if (vehicule != null) {
+                if (vehicule.isEstPrincipal()) {
+                    JOptionPane.showMessageDialog(this,
+                        "Ce véhicule est déjà défini comme véhicule principal",
+                        "Information",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+                
+                int choix = JOptionPane.showConfirmDialog(this,
+                    "Définir ce véhicule comme véhicule principal ?\n\n" +
+                    "Plaque: " + vehicule.getPlaqueImmatriculation() + "\n" +
+                    "Type: " + vehicule.getTypeVehicule(),
+                    "Définir comme véhicule principal",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+                
+                if (choix == JOptionPane.YES_OPTION) {
+                    if (VehiculeUsagerDAO.definirVehiculePrincipal(
+                        vehicule.getIdVehiculeUsager(), usager.getIdUsager())) {
+                        
+                        // Rafraîchir la liste
+                        listModel.clear();
+                        List<VehiculeUsager> vehicules = VehiculeUsagerDAO.getVehiculesByUsager(usager.getIdUsager());
+                        for (VehiculeUsager v : vehicules) {
+                            listModel.addElement(v);
+                        }
+                        
+                        JOptionPane.showMessageDialog(this,
+                            "Véhicule défini comme principal avec succès",
+                            "Succès",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Veuillez sélectionner un véhicule", 
+                    "Aucune sélection", 
+                    JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        panelBoutons.add(btnAjouter);
+        panelBoutons.add(btnModifier);
+        panelBoutons.add(btnSupprimer);
+        panelBoutons.add(btnDefinirPrincipal);
+        
+        panel.add(panelBoutons, BorderLayout.SOUTH);
         
         return panel;
     }
@@ -343,7 +564,7 @@ public class Page_Utilisateur extends JFrame {
         
         JLabel lblLibelle = new JLabel(libelle);
         lblLibelle.setFont(new Font("Arial", Font.BOLD, 14)); 
-        lblLibelle.setPreferredSize(new Dimension(100, 25)); 
+        lblLibelle.setPreferredSize(new Dimension(120, 25)); 
         
         JLabel lblValeur = new JLabel(valeur);
         lblValeur.setFont(new Font("Arial", Font.PLAIN, 14)); 
@@ -371,6 +592,50 @@ public class Page_Utilisateur extends JFrame {
         statPanel.add(Box.createVerticalStrut(10));
         
         panel.add(statPanel);
+    }
+    
+    private void ouvrirPopupAjoutCarteTisseo() {
+        String numeroCarte = JOptionPane.showInputDialog(
+            this,
+            "Entrez votre numéro de carte Tisséo (Pastel) :\n" +
+            "Format : 10 chiffres (ex: 1234567890)",
+            "Carte Tisséo",
+            JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (numeroCarte != null && !numeroCarte.trim().isEmpty()) {
+            if (!numeroCarte.matches("\\d{10}")) {
+                JOptionPane.showMessageDialog(this,
+                    "Le format est incorrect.\n" +
+                    "Veuillez entrer 10 chiffres (ex: 1234567890).",
+                    "Numéro invalide", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            try {
+                UsagerDAO.enregistrerCarteTisseo(usager.getIdUsager(), numeroCarte.trim());
+                
+                JOptionPane.showMessageDialog(this,
+                    "✅ Carte Tisséo enregistrée avec succès\n\n" +
+                    "Numéro : " + numeroCarte + "\n" +
+                    "Vous pouvez maintenant utiliser les parkings relais gratuitement.",
+                    "Succès",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+
+                // Rafraîchir la page
+                new Page_Utilisateur(emailUtilisateur, true).setVisible(true);
+                dispose();
+                
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'enregistrement de la carte : " + e.getMessage(),
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
     }
     
     private void retourAccueil() {
@@ -491,5 +756,58 @@ public class Page_Utilisateur extends JFrame {
     
     public JButton getBtnRetour() {
         return btnRetour;
+    }
+    
+    public JButton getBtnGestionVehicules() {
+        return btnGestionVehicules;
+    }
+    
+    public JLabel getLblInfoVehicules() {
+        return lblInfoVehicules;
+    }
+    
+    // Renderer pour la liste des véhicules
+    private class VehiculeRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, 
+                                                     int index, boolean isSelected, 
+                                                     boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            VehiculeUsager vehicule = (VehiculeUsager) value;
+            
+            StringBuilder texte = new StringBuilder("<html>");
+            
+            if (vehicule.isEstPrincipal()) {
+                texte.append("<b>★ ").append(vehicule.getPlaqueImmatriculation()).append("</b>");
+            } else {
+                texte.append(vehicule.getPlaqueImmatriculation());
+            }
+            
+            texte.append(" - ").append(vehicule.getTypeVehicule());
+            
+            if (vehicule.getMarque() != null && !vehicule.getMarque().isEmpty()) {
+                texte.append(" ").append(vehicule.getMarque());
+            }
+            if (vehicule.getModele() != null && !vehicule.getModele().isEmpty()) {
+                texte.append(" ").append(vehicule.getModele());
+            }
+            
+            texte.append("</html>");
+            
+            setText(texte.toString());
+            
+            if (isSelected) {
+                setBackground(new Color(220, 240, 255));
+                setForeground(Color.BLACK);
+            } else {
+                if (vehicule.isEstPrincipal()) {
+                    setBackground(new Color(255, 255, 220));
+                } else {
+                    setBackground(Color.WHITE);
+                }
+            }
+            
+            return this;
+        }
     }
 }

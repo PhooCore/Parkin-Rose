@@ -1,16 +1,31 @@
 package modele;
 
+import java.time.LocalDateTime;
+
 public class Abonnement {
     private String idAbonnement;
+    private int idUsager;  // Ajouté: ID de l'usager
     private String libelleAbonnement;
-    private double tarifApplique;
+    private String typeAbonnement;  // Ajouté: "ZONE_BLEUE", "PREMIUM", etc.
+    private double tarifAbonnement;  // Renommé de tarifApplique pour plus de clarté
+    private LocalDateTime dateDebut;  // Ajouté: date de début de l'abonnement
+    private LocalDateTime dateFin;    // Ajouté: date de fin de l'abonnement
+    private String statut;           // Ajouté: "ACTIF", "INACTIF", "EXPIRE"
     
     public Abonnement() {}
     
-    public Abonnement(String idAbonnement, String libelleAbonnement, double tarifApplique) {
+    // Constructeur complet
+    public Abonnement(String idAbonnement, int idUsager, String libelleAbonnement, 
+                     String typeAbonnement, double tarifAbonnement, 
+                     LocalDateTime dateDebut, LocalDateTime dateFin, String statut) {
         this.idAbonnement = idAbonnement;
+        this.idUsager = idUsager;
         this.libelleAbonnement = libelleAbonnement;
-        this.tarifApplique = tarifApplique;
+        this.typeAbonnement = typeAbonnement;
+        this.tarifAbonnement = tarifAbonnement;
+        this.dateDebut = dateDebut;
+        this.dateFin = dateFin;
+        this.statut = statut;
     }
     
     public String getIdAbonnement() {
@@ -21,6 +36,14 @@ public class Abonnement {
         this.idAbonnement = idAbonnement;
     }
     
+    public int getIdUsager() {
+        return idUsager;
+    }
+    
+    public void setIdUsager(int idUsager) {
+        this.idUsager = idUsager;
+    }
+    
     public String getLibelleAbonnement() {
         return libelleAbonnement;
     }
@@ -29,17 +52,93 @@ public class Abonnement {
         this.libelleAbonnement = libelleAbonnement;
     }
     
-    public double getTarifAbonnement() {
-        return tarifApplique;
+    public String getTypeAbonnement() {
+        return typeAbonnement;
     }
     
-    public void setTarifAbonnement(double tarifApplique) {
-        this.tarifApplique = tarifApplique;
+    public void setTypeAbonnement(String typeAbonnement) {
+        this.typeAbonnement = typeAbonnement;
     }
-
+    
+    public double getTarifAbonnement() {
+        return tarifAbonnement;
+    }
+    
+    public void setTarifAbonnement(double tarifAbonnement) {
+        this.tarifAbonnement = tarifAbonnement;
+    }
+    
+    public LocalDateTime getDateDebut() {
+        return dateDebut;
+    }
+    
+    public void setDateDebut(LocalDateTime dateDebut) {
+        this.dateDebut = dateDebut;
+    }
+    
+    public LocalDateTime getDateFin() {
+        return dateFin;
+    }
+    
+    public void setDateFin(LocalDateTime dateFin) {
+        this.dateFin = dateFin;
+    }
+    
+    public String getStatut() {
+        return statut;
+    }
+    
+    public void setStatut(String statut) {
+        this.statut = statut;
+    }
+    
+    // Méthode pour vérifier si l'abonnement est actif
+    public boolean estActif() {
+        LocalDateTime maintenant = LocalDateTime.now();
+        
+        // Vérifier le statut
+        if (!"ACTIF".equals(statut)) {
+            return false;
+        }
+        
+        // Vérifier les dates
+        if (dateDebut != null && dateDebut.isAfter(maintenant)) {
+            return false; // Pas encore commencé
+        }
+        
+        if (dateFin != null && dateFin.isBefore(maintenant)) {
+            return false; // Expiré
+        }
+        
+        return true;
+    }
+    
+    // Méthode pour vérifier si c'est un abonnement zone bleue
+    public boolean estZoneBleue() {
+        return "ZONE_BLEUE".equals(typeAbonnement) || 
+               (libelleAbonnement != null && libelleAbonnement.toLowerCase().contains("bleue"));
+    }
+    
+    // Méthode pour vérifier si l'abonnement est gratuit
+    public boolean estGratuit() {
+        return tarifAbonnement == 0.0;
+    }
+    
+    // Méthode pour vérifier si l'abonnement a expiré
+    public boolean estExpire() {
+        LocalDateTime maintenant = LocalDateTime.now();
+        return dateFin != null && dateFin.isBefore(maintenant);
+    }
+    
     @Override
     public String toString() {
-        return "Abonnement [idAbonnement=" + idAbonnement + ", libelleAbonnement=" + libelleAbonnement
-                + ", tarifApplique=" + tarifApplique + "]";
+        return "Abonnement [id=" + idAbonnement + 
+               ", usager=" + idUsager + 
+               ", libellé=" + libelleAbonnement + 
+               ", type=" + typeAbonnement + 
+               ", tarif=" + tarifAbonnement + "€" +
+               ", statut=" + statut + 
+               ", début=" + dateDebut + 
+               ", fin=" + dateFin + "]";
     }
 }
