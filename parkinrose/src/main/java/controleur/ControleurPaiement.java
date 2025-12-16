@@ -6,7 +6,7 @@ import modele.Usager;
 import modele.dao.PaiementDAO;
 import modele.dao.StationnementDAO;
 import modele.dao.UsagerDAO;
-import ihm.Page_Paiement;
+import ihm.Page_Paiement_Voirie;
 import ihm.Page_Principale;
 import javax.swing.JOptionPane;
 import javax.swing.JButton;
@@ -32,7 +32,7 @@ public class ControleurPaiement implements ActionListener {
         ANNULATION_EN_COURS
     }
     
-    private Page_Paiement vue;
+    private Page_Paiement_Voirie vue;
     private EtatPaiement etat;
     private String emailUtilisateur;
     private Usager usager;
@@ -41,7 +41,7 @@ public class ControleurPaiement implements ActionListener {
     /**
      * Constructeur du contrôleur de paiement
      */
-    public ControleurPaiement(Page_Paiement vue) {
+    public ControleurPaiement(Page_Paiement_Voirie vue) {
         this.vue = vue;
         this.emailUtilisateur = vue.emailUtilisateur;
         this.usager = UsagerDAO.getUsagerByEmail(emailUtilisateur);

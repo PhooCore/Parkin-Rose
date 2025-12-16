@@ -13,7 +13,7 @@ import modele.dao.ZoneDAO;
 import modele.Parking;
 import ihm.Page_Garer_Voirie;
 import ihm.Page_Garer_Parking;
-import ihm.Page_Paiement;
+import ihm.Page_Paiement_Voirie;
 import ihm.Page_Principale;
 import javax.swing.JOptionPane;
 import java.time.LocalDateTime;
@@ -130,7 +130,7 @@ public class StationnementControleur {
             return false;
         }
 
-        Page_Paiement pagePaiement = new Page_Paiement(
+        Page_Paiement_Voirie pagePaiement = new Page_Paiement_Voirie(
             cout,
             emailUtilisateur,
             typeVehicule,

@@ -5,7 +5,7 @@ import java.awt.*;
 import controleur.ControleurPaiement;
 import java.time.LocalDateTime;
 
-public class Page_Paiement extends JFrame {
+public class Page_Paiement_Voirie extends JFrame {
     private static final long serialVersionUID = 1L;
     
     // Variables accessibles au contrôleur
@@ -30,7 +30,7 @@ public class Page_Paiement extends JFrame {
     public JButton btnPayer;   
 
     // **CONSTRUCTEUR POUR VOIRIE** - SANS idStationnement
-    public Page_Paiement(double montant, String emailUtilisateur, String typeVehicule, 
+    public Page_Paiement_Voirie(double montant, String emailUtilisateur, String typeVehicule, 
                         String plaqueImmatriculation, String idZone, String nomZone, 
                         int dureeHeures, int dureeMinutes) {
         this.montant = montant;
@@ -48,14 +48,14 @@ public class Page_Paiement extends JFrame {
     }
     
     // **CONSTRUCTEUR POUR PARKING** - AVEC idStationnement
-    public Page_Paiement(double montant, String emailUtilisateur, String typeVehicule, 
+    public Page_Paiement_Voirie(double montant, String emailUtilisateur, String typeVehicule, 
                         String plaqueImmatriculation, String idZone, String nomZone,
                         int dureeHeures, int dureeMinutes, Integer idStationnement) {
         this(montant, emailUtilisateur, typeVehicule, plaqueImmatriculation, 
              idZone, nomZone, dureeHeures, dureeMinutes, idStationnement, null);
     }
     
-    public Page_Paiement(double montant, String emailUtilisateur, String typeVehicule, 
+    public Page_Paiement_Voirie(double montant, String emailUtilisateur, String typeVehicule, 
                         String plaqueImmatriculation, String idZone, String nomZone,
                         int dureeHeures, int dureeMinutes, Integer idStationnement, 
                         LocalDateTime heureDepart) {

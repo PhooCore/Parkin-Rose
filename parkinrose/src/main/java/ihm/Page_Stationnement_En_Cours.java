@@ -267,7 +267,7 @@ public class Page_Stationnement_En_Cours extends JFrame {
                 stationnementActif.getIdTarification()
             );
             
-            Page_Paiement pagePaiement = new Page_Paiement(
+            Page_Paiement_Voirie pagePaiement = new Page_Paiement_Voirie(
                 cout,
                 emailUtilisateur,
                 stationnementActif.getTypeVehicule(),
