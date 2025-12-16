@@ -32,6 +32,8 @@ public class Page_Utilisateur extends JFrame {
     private JButton btnRetour;
     private JButton btnGestionVehicules;
     private JLabel lblInfoVehicules;
+    private JButton btnModifierAdresse;
+
     
     public Page_Utilisateur(String email, boolean rafraichir) {
         this.emailUtilisateur = email;
@@ -109,16 +111,49 @@ public class Page_Utilisateur extends JFrame {
         
         panel.add(Box.createVerticalStrut(20));
         
-        // Abonnement
-        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
+        JPanel ligneAdresse = new JPanel(new BorderLayout());
+        ligneAdresse.setBackground(Color.WHITE);
+        ligneAdresse.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         
-        if (!abonnements.isEmpty()) {
-            Abonnement abonnementActif = abonnements.get(0);
-            ajouterLigneInfo(panel, "Abonnement:", abonnementActif.getLibelleAbonnement());
+        JLabel lblLibelleAdresse = new JLabel("Adresse:");
+        lblLibelleAdresse.setFont(new Font("Arial", Font.BOLD, 14));
+        lblLibelleAdresse.setPreferredSize(new Dimension(120, 25));
+        
+        String adresseComplete = UsagerDAO.getAdresseComplete(usager.getIdUsager());
+        JLabel lblAdresse = new JLabel(adresseComplete);
+        lblAdresse.setFont(new Font("Arial", Font.PLAIN, 14));
+        
+        btnModifierAdresse = new JButton("Modifier");
+        btnModifierAdresse.addActionListener(e -> {
+            new Page_Modifier_Adresse(emailUtilisateur).setVisible(true);
+            dispose();
+        });
+        
+        
+        ligneAdresse.add(lblLibelleAdresse, BorderLayout.WEST);
+        ligneAdresse.add(lblAdresse, BorderLayout.CENTER);
+        ligneAdresse.add(btnModifierAdresse, BorderLayout.EAST);
+        panel.add(ligneAdresse);
+        
+        panel.add(Box.createVerticalStrut(20));
+        
+        Abonnement abonnement = AbonnementDAO.getAbonnementByUsager(usager.getIdUsager());
+        
+        if (abonnement != null && abonnement.getIdAbonnement() != null) {
+            ajouterLigneInfo(panel, "Abonnement:", abonnement.getLibelleAbonnement());
+            ajouterLigneInfo(panel, "Tarif:", String.format("%.2f €", abonnement.getTarifAbonnement()));
             
             java.sql.Date dateDebut = AbonnementDAO.getDateDebutAbonnement(usager.getIdUsager());
             if (dateDebut != null) {
                 ajouterLigneInfo(panel, "Depuis le:", dateDebut.toString());
+            }
+            
+            if (abonnement.estActif()) {
+                JLabel lblActif = new JLabel("✓ Actif");
+                lblActif.setForeground(Color.GREEN);
+                lblActif.setFont(new Font("Arial", Font.BOLD, 12));
+                panel.add(lblActif);
+                panel.add(Box.createVerticalStrut(5));
             }
             
             panel.add(Box.createVerticalStrut(10));
@@ -127,18 +162,19 @@ public class Page_Utilisateur extends JFrame {
             panelBoutonsAbo.setBackground(Color.WHITE);
             
             JButton btnChanger = new JButton("Changer d'abonnement");
-            btnChanger.addActionListener(e -> changerAbonnement(abonnementActif));
+            btnChanger.addActionListener(e -> changerAbonnement(abonnement));
             
             JButton btnResilier = new JButton("Résilier");
             btnResilier.setBackground(new Color(220, 80, 80));
             btnResilier.setForeground(Color.WHITE);
-            btnResilier.addActionListener(e -> resilierAbonnement(abonnementActif));
+            btnResilier.addActionListener(e -> resilierAbonnement(abonnement));
             
             panelBoutonsAbo.add(btnChanger);
             panelBoutonsAbo.add(btnResilier);
             panel.add(panelBoutonsAbo);
             
         } else {
+            // Pas d'abonnement
             JPanel ligneAbonnement = new JPanel(new BorderLayout());
             ligneAbonnement.setBackground(Color.WHITE);
             ligneAbonnement.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
@@ -658,7 +694,7 @@ public class Page_Utilisateur extends JFrame {
         );
         
         if (choix == JOptionPane.YES_OPTION) {
-            boolean supprime = AbonnementDAO.supprimerAbonnementsUtilisateur(usager.getIdUsager());
+            boolean supprime = AbonnementDAO.supprimerAbonnementUtilisateur(usager.getIdUsager());
             
             if (supprime) {
                 JOptionPane.showMessageDialog(
@@ -712,7 +748,7 @@ public class Page_Utilisateur extends JFrame {
             );
             
             if (confirmation2 == JOptionPane.YES_OPTION) {
-                boolean supprime = AbonnementDAO.supprimerAbonnementsUtilisateur(usager.getIdUsager());
+                boolean supprime = AbonnementDAO.supprimerAbonnementUtilisateur(usager.getIdUsager());
                 
                 if (supprime) {
                     JOptionPane.showMessageDialog(
@@ -764,6 +800,10 @@ public class Page_Utilisateur extends JFrame {
     
     public JLabel getLblInfoVehicules() {
         return lblInfoVehicules;
+    }
+    
+    public JButton getBtnModifierAdresse() {
+        return btnModifierAdresse;
     }
     
     // Renderer pour la liste des véhicules

@@ -394,12 +394,12 @@ public class ControleurGestionUtilisateurs implements ActionListener {
             .toArray(String[]::new);
         
         // Vérifier l'abonnement actuel
-        List<Abonnement> abonnementsActuels = AbonnementDAO.getAbonnementsByUsager(usager.getIdUsager());
-        String abonnementActuel = "Aucun";
+        Abonnement abonnementActuel = AbonnementDAO.getAbonnementByUsager(usager.getIdUsager());
+        String abonnementActuelStr = "Aucun";
         String idAbonnementActuel = null;
-        if (!abonnementsActuels.isEmpty()) {
-            abonnementActuel = abonnementsActuels.get(0).getLibelleAbonnement();
-            idAbonnementActuel = abonnementsActuels.get(0).getIdAbonnement();
+        if (AbonnementDAO.hasAbonnement(usager.getIdUsager(), abonnementActuel.getIdAbonnement())) {
+        	abonnementActuelStr = abonnementActuel.getLibelleAbonnement();
+        	idAbonnementActuel = abonnementActuel.getIdAbonnement();
         }
         
         JDialog dialog = new JDialog(vue, "Gestion des Abonnements", true);
@@ -449,11 +449,11 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         });
         
         btnSupprimer.addActionListener(e -> {
-            if (!abonnementsActuels.isEmpty()) {
+            if (AbonnementDAO.hasAbonnement(usager.getIdUsager(), abonnementActuel.getIdAbonnement())) {
                 if (vue.demanderConfirmation("Supprimer l'abonnement de " + 
                     usager.getPrenomUsager() + " " + usager.getNomUsager() + " ?")) {
                     
-                    if (AbonnementDAO.supprimerAbonnementsUtilisateur(usager.getIdUsager())) {
+                    if (AbonnementDAO.supprimerAbonnementUtilisateur(usager.getIdUsager())) {
                         vue.afficherInformation("Abonnement supprimé avec succès");
                         vue.chargerUtilisateurs();
                         dialog.dispose();

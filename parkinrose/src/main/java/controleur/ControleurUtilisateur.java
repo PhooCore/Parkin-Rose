@@ -5,6 +5,7 @@ import modele.dao.UsagerDAO;
 import ihm.Page_Utilisateur;
 import ihm.Page_Authentification;
 import ihm.Page_Modif_MDP;
+import ihm.Page_Modifier_Adresse;
 import ihm.Page_Principale;
 import ihm.Page_Abonnements;
 import ihm.Page_Historique_Stationnements;
@@ -51,6 +52,10 @@ public class ControleurUtilisateur implements ActionListener {
         if (vue.getBtnGestionVehicules() != null) {
             vue.getBtnGestionVehicules().addActionListener(this);
         }
+        
+        if (vue.getBtnModifierAdresse() != null) {
+            vue.getBtnModifierAdresse().addActionListener(this);
+        }
     }
     
     @Override
@@ -65,7 +70,15 @@ public class ControleurUtilisateur implements ActionListener {
             deconnecterUtilisateur();
         } else if (source == vue.getBtnRetour()) {
             retourAccueil();
+        } else if (source == vue.getBtnModifierAdresse()) {
+            ouvrirModificationAdresse();
         }
+    }
+    
+    private void ouvrirModificationAdresse() {
+        Page_Modifier_Adresse pageAdresse = new Page_Modifier_Adresse(emailUtilisateur);
+        pageAdresse.setVisible(true);
+        vue.setVisible(false);
     }
     
     /**

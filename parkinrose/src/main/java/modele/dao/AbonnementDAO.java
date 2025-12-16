@@ -33,15 +33,14 @@ public class AbonnementDAO {
     }
     
     /**
-     * Récupère les abonnements d'un utilisateur spécifique
+     * Récupère l'abonnement d'un utilisateur spécifique
      * @param idUsager ID de l'utilisateur
      * @return Liste des abonnements de l'utilisateur
      */
-    public static List<Abonnement> getAbonnementsByUsager(int idUsager) {
-        List<Abonnement> abonnements = new ArrayList<>();
+    public static Abonnement getAbonnementByUsager(int idUsager) {
         String sql = "SELECT a.* FROM Abonnement a " +
                      "INNER JOIN Appartenir ap ON a.id_abonnement = ap.id_abonnement " +
-                     "WHERE ap.id_usager = ? ORDER BY a.tarif_applique";
+                     "WHERE ap.id_usager = ?";
         
         try (Connection conn = MySQLConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -49,17 +48,17 @@ public class AbonnementDAO {
             pstmt.setInt(1, idUsager);
             ResultSet rs = pstmt.executeQuery();
             
-            while (rs.next()) {
+            if (rs.next()) {
                 Abonnement abonnement = new Abonnement();
                 abonnement.setIdAbonnement(rs.getString("id_abonnement"));
                 abonnement.setLibelleAbonnement(rs.getString("libelle_abonnement"));
                 abonnement.setTarifAbonnement(rs.getDouble("tarif_applique"));
-                abonnements.add(abonnement);
+                return abonnement; 
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return abonnements;
+        return null; 
     }
     
     /**
@@ -90,27 +89,6 @@ public class AbonnementDAO {
     }
     
     /**
-     * Supprime tous les abonnements d'un utilisateur
-     * @param idUsager ID de l'utilisateur
-     * @return true si la suppression a réussi, false sinon
-     */
-    public static boolean supprimerAbonnementsUtilisateur(int idUsager) {
-        String sql = "DELETE FROM Appartenir WHERE id_usager = ?";
-        
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setInt(1, idUsager);
-            int rowsAffected = pstmt.executeUpdate();
-            return true;
-            
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-    
-    /**
      * Ajoute un abonnement à un utilisateur
      * @param idUsager ID de l'utilisateur
      * @param idAbonnement ID de l'abonnement
@@ -118,18 +96,15 @@ public class AbonnementDAO {
      */
     public static boolean ajouterAbonnementUtilisateur(int idUsager, String idAbonnement) {
         
-        // Vérifier si l'abonnement existe
         if (!abonnementExiste(idAbonnement)) {
             return false;
         }
         
-        // Vérifier si l'utilisateur existe (optionnel mais recommandé)
         if (!usagerExiste(idUsager)) {
             return false;
         }
         
-        // D'abord supprimer les anciens abonnements
-        supprimerAbonnementsUtilisateur(idUsager);
+        supprimerAbonnementUtilisateur(idUsager);
         
         String sql = "INSERT INTO Appartenir (id_usager, id_abonnement, date_debut) VALUES (?, ?, CURDATE())";
         
@@ -150,6 +125,27 @@ public class AbonnementDAO {
     }
     
     /**
+     * Supprime l'abonnement d'un utilisateur
+     * @param idUsager ID de l'utilisateur
+     * @return true si la suppression a réussi, false sinon
+     */
+    public static boolean supprimerAbonnementUtilisateur(int idUsager) {
+        String sql = "DELETE FROM Appartenir WHERE id_usager = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, idUsager);
+            pstmt.executeUpdate();
+            return true;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    } 
+    
+    /**
      * Vérifie si un utilisateur a déjà un abonnement
      * @param idUsager ID de l'utilisateur
      * @return true si l'utilisateur a un abonnement, false sinon
@@ -166,6 +162,30 @@ public class AbonnementDAO {
             if (rs.next()) {
                 int count = rs.getInt(1);
                 return count > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    /**
+     * Vérifie si un utilisateur a l'abonnement
+     * @param idUsager ID de l'utilisateur
+     * @return true si l'utilisateur a cet abonnement, false sinon
+     */
+    public static boolean hasAbonnement(int idUsager, String idAbonnement) {
+        String sql = "SELECT COUNT(*) FROM Appartenir WHERE id_usager = ? AND id_abonnement = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, idUsager);
+            pstmt.setString(2, idAbonnement);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -242,25 +262,47 @@ public class AbonnementDAO {
         }
         return null;
     }
+    
 
-    public static boolean hasAbonnement(int idUsager, String idAbonnement) {
-        String sql = "SELECT COUNT(*) FROM Appartenir WHERE id_usager = ? AND id_abonnement = ?";
+    /**
+     * Récupère les abonnements par type (filtrage)
+     * @param type Type d'abonnement (facultatif)
+     * @return Liste d'abonnements filtrés
+     */
+    public static List<Abonnement> getAbonnementsByType(String type) {
+        List<Abonnement> abonnements = new ArrayList<>();
+        String sql = "SELECT * FROM Abonnement WHERE 1=1";
+        
+        if (type != null && !type.isEmpty()) {
+            sql += " AND id_abonnement LIKE ?";
+        }
+        sql += " ORDER BY tarif_applique";
         
         try (Connection conn = MySQLConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setInt(1, idUsager);
-            pstmt.setString(2, idAbonnement);
+            if (type != null && !type.isEmpty()) {
+                pstmt.setString(1, type + "%");
+            }
+            
             ResultSet rs = pstmt.executeQuery();
             
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            while (rs.next()) {
+                Abonnement abonnement = new Abonnement();
+                abonnement.setIdAbonnement(rs.getString("id_abonnement"));
+                abonnement.setLibelleAbonnement(rs.getString("libelle_abonnement"));
+                abonnement.setTarifAbonnement(rs.getDouble("tarif_applique"));
+                abonnements.add(abonnement);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return false;
+        return abonnements;
     }
+    
+    //====================================================//
+    //                  Administrateur                    //
+    //====================================================//
     
     /**
      * Ajoute un nouvel abonnement (pour l'admin)
@@ -314,12 +356,12 @@ public class AbonnementDAO {
      * @return true si la suppression a réussi, false sinon
      */
     public static boolean delete(String idAbonnement) {
-        // D'abord supprimer les relations dans Appartenir
+        // Supprimer les relations dans Appartenir
         String sqlDeleteAppartenir = "DELETE FROM Appartenir WHERE id_abonnement = ?";
         String sqlDeleteAbonnement = "DELETE FROM Abonnement WHERE id_abonnement = ?";
         
         try (Connection conn = MySQLConnection.getConnection()) {
-            conn.setAutoCommit(false); // Début de la transaction
+            conn.setAutoCommit(false);
             
             try (PreparedStatement pstmt1 = conn.prepareStatement(sqlDeleteAppartenir);
                  PreparedStatement pstmt2 = conn.prepareStatement(sqlDeleteAbonnement)) {
@@ -332,52 +374,16 @@ public class AbonnementDAO {
                 pstmt2.setString(1, idAbonnement);
                 int rowsAffected = pstmt2.executeUpdate();
                 
-                conn.commit(); // Valider la transaction
+                conn.commit();
                 return rowsAffected > 0;
                 
             } catch (SQLException e) {
-                conn.rollback(); // Annuler la transaction en cas d'erreur
+                conn.rollback();
                 throw e;
             }
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
-    }
-    
-    /**
-     * Récupère les abonnements par type (filtrage)
-     * @param type Type d'abonnement (facultatif)
-     * @return Liste d'abonnements filtrés
-     */
-    public static List<Abonnement> getAbonnementsByType(String type) {
-        List<Abonnement> abonnements = new ArrayList<>();
-        String sql = "SELECT * FROM Abonnement WHERE 1=1";
-        
-        if (type != null && !type.isEmpty()) {
-            sql += " AND id_abonnement LIKE ?";
-        }
-        sql += " ORDER BY tarif_applique";
-        
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            if (type != null && !type.isEmpty()) {
-                pstmt.setString(1, type + "%");
-            }
-            
-            ResultSet rs = pstmt.executeQuery();
-            
-            while (rs.next()) {
-                Abonnement abonnement = new Abonnement();
-                abonnement.setIdAbonnement(rs.getString("id_abonnement"));
-                abonnement.setLibelleAbonnement(rs.getString("libelle_abonnement"));
-                abonnement.setTarifAbonnement(rs.getDouble("tarif_applique"));
-                abonnements.add(abonnement);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return abonnements;
     }
 }

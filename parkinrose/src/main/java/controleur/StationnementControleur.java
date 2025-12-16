@@ -39,12 +39,9 @@ public class StationnementControleur {
      * @return true si l'usager a un abonnement actif
      */
     public boolean usagerAUnAbonnementActif(int idUsager) {
-        // Vérifier via la DAO si l'utilisateur a un abonnement actif
-        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(idUsager);
-        for (Abonnement abonnement : abonnements) {
-            if (abonnement.estActif()) {
-                return true;
-            }
+    	Abonnement abonnement = AbonnementDAO.getAbonnementByUsager(idUsager);
+        if (abonnement.estActif()) {
+        	return true;
         }
         return false;
     }
@@ -55,11 +52,9 @@ public class StationnementControleur {
      * @return Tarif de l'abonnement actif, ou 0.0 si aucun
      */
     public double getTarifAbonnement(int idUsager) {
-        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(idUsager);
-        for (Abonnement abonnement : abonnements) {
-            if (abonnement.estActif()) {
-                return abonnement.getTarifAbonnement();
-            }
+    	Abonnement abonnement = AbonnementDAO.getAbonnementByUsager(idUsager);
+        if (abonnement.estActif()) {
+            return abonnement.getTarifAbonnement();
         }
         return 0.0;
     }
@@ -70,11 +65,9 @@ public class StationnementControleur {
      * @return ID de l'abonnement actif, ou null si aucun
      */
     public String getIdAbonnementActif(int idUsager) {
-        List<Abonnement> abonnements = AbonnementDAO.getAbonnementsByUsager(idUsager);
-        for (Abonnement abonnement : abonnements) {
-            if (abonnement.estActif()) {
-                return abonnement.getIdAbonnement();
-            }
+    	Abonnement abonnement = AbonnementDAO.getAbonnementByUsager(idUsager);
+        if (abonnement.estActif()) {
+            return abonnement.getIdAbonnement();
         }
         return null;
     }

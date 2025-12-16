@@ -270,6 +270,139 @@ public class UsagerDAO {
         }
     }
     
+    public static boolean mettreAJourAdresse(int idUsager, String adresse, 
+            String codePostal, String ville) {
+    	String sql = "UPDATE Usager SET adresse = ?, code_postal = ?, ville = ? WHERE id_usager = ?";
+
+    	try (Connection conn = MySQLConnection.getConnection();
+    			PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+    		pstmt.setString(1, adresse);
+    		pstmt.setString(2, codePostal);
+    		pstmt.setString(3, ville);
+    		pstmt.setInt(4, idUsager);
+
+    		int rowsAffected = pstmt.executeUpdate();
+
+    		if (rowsAffected > 0) {
+    			return true;
+    		}
+
+    	} catch (SQLException e) {
+    		System.err.println("Erreur mise à jour adresse: " + e.getMessage());
+    		e.printStackTrace();
+    	}
+    	return false;
+    }
+    
+    
+    /**
+     * Met à jour la zone résidentielle d'un utilisateur
+     */
+    public static boolean mettreAJourZoneResidentielle(int idUsager, String idZone) {
+        String sql = "UPDATE Usager SET id_zone_residentielle = ? WHERE id_usager = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, idZone);
+            pstmt.setInt(2, idUsager);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Erreur mise à jour zone résidentielle: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Récupère la zone résidentielle d'un utilisateur
+     */
+    public static String getZoneResidentielle(int idUsager) {
+        String sql = "SELECT id_zone_residentielle FROM Usager WHERE id_usager = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, idUsager);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getString("id_zone_residentielle");
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Erreur récupération zone résidentielle: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+    /**
+     * Récupère l'adresse complète d'un utilisateur
+     */
+    public static String getAdresseComplete(int idUsager) {
+        String sql = "SELECT adresse, code_postal, ville FROM Usager WHERE id_usager = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, idUsager);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                String adresse = rs.getString("adresse");
+                String codePostal = rs.getString("code_postal");
+                String ville = rs.getString("ville");
+                
+                if (adresse == null || adresse.trim().isEmpty()) {
+                    return "Non renseignée";
+                }
+                
+                StringBuilder sb = new StringBuilder(adresse);
+                if (codePostal != null && !codePostal.trim().isEmpty()) {
+                    sb.append(", ").append(codePostal);
+                }
+                if (ville != null && !ville.trim().isEmpty()) {
+                    sb.append(" ").append(ville);
+                }
+                return sb.toString();
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Erreur récupération adresse: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return "Non renseignée";
+    }
+    
+    /**
+     * Vérifie si un utilisateur a renseigné son adresse
+     */
+    public static boolean hasAdresse(int idUsager) {
+        String sql = "SELECT adresse FROM Usager WHERE id_usager = ?";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, idUsager);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                String adresse = rs.getString("adresse");
+                return adresse != null && !adresse.trim().isEmpty();
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Erreur vérification adresse: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     /**
      * Mappe un ResultSet vers un objet Usager
      */

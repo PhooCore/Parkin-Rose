@@ -222,12 +222,12 @@ public class ControleurAbonnements implements ActionListener {
         }
         
         // Vérifier si l'utilisateur a déjà un abonnement
-        List<Abonnement> abonnementsExistants = 
-            AbonnementDAO.getAbonnementsByUsager(vue.getUsager().getIdUsager());
+        Abonnement abonnementExistant = 
+            AbonnementDAO.getAbonnementByUsager(vue.getUsager().getIdUsager());
         
-        if (!abonnementsExistants.isEmpty()) {
+        if (!abonnementExistant.equals(null)) {
             etat = EtatAbonnements.CONFIRMATION_REMPLACEMENT;
-            demanderConfirmationRemplacement(abonnementsExistants.get(0));
+            demanderConfirmationRemplacement(abonnementExistant);
         } else {
             etat = EtatAbonnements.REDIRECTION_PAIEMENT;
             redirigerVersPaiement();
@@ -296,7 +296,6 @@ public class ControleurAbonnements implements ActionListener {
             JOptionPane.ERROR_MESSAGE);
     }
     
-    // Getters pour le débogage
     public EtatAbonnements getEtat() {
         return etat;
     }
