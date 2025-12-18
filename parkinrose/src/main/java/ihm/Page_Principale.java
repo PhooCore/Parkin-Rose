@@ -21,6 +21,7 @@ public class Page_Principale extends JFrame {
     private static final long serialVersionUID = 1L;
     public String emailUtilisateur;
     private Usager usager;
+    public JButton btnMessagerie;
     public JButton btnStationnement;
     public JButton btnUtilisateur;
     public JButton btnPreparerStationnement;
@@ -364,6 +365,23 @@ public class Page_Principale extends JFrame {
         JPanel panelDroit = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         panelDroit.setBackground(new Color(240, 240, 240));
         
+        //Bouton Messagerie
+        btnMessagerie = new JButton();
+        btnMessagerie.setLayout(new BorderLayout());
+        btnMessagerie.setBackground(new Color(240, 240, 240));
+        btnMessagerie.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        btnMessagerie.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnMessagerie.setPreferredSize(new Dimension(140, 70)); 
+        
+        //Icone messagerie
+        JLabel lblIconeMess = chargerIconeLabel("/images/email.png", 40, 40, "M");
+        JLabel lblTextMess = new JLabel("Messagerie", SwingConstants.CENTER);
+        lblTextMess.setFont(new Font("Arial", Font.PLAIN, 12));
+        lblTextMess.setForeground(Color.DARK_GRAY);
+        
+        btnMessagerie.add(lblIconeMess, BorderLayout.CENTER);
+        btnMessagerie.add(lblTextMess, BorderLayout.SOUTH); 
+        
         // Bouton Stationnement
         btnStationnement = new JButton();
         btnStationnement.setLayout(new BorderLayout());
@@ -371,6 +389,7 @@ public class Page_Principale extends JFrame {
         btnStationnement.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         btnStationnement.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnStationnement.setPreferredSize(new Dimension(140, 70));
+        
         
         // Icône stationnement
         JLabel lblIconePark = chargerIconeLabel("/images/parking.png", 40, 40, "P");
@@ -398,6 +417,7 @@ public class Page_Principale extends JFrame {
         btnUtilisateur.add(lblIconeUser, BorderLayout.CENTER);
         btnUtilisateur.add(lblTextUser, BorderLayout.SOUTH);
         
+        panelDroit.add(btnMessagerie);
         panelDroit.add(btnStationnement);
         panelDroit.add(btnUtilisateur);
         

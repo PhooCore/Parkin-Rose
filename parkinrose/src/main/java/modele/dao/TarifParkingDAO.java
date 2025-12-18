@@ -12,8 +12,7 @@ public class TarifParkingDAO {
     
     // Liste des parkings gratuits
     private static final String[] PARKINGS_GRATUITS = {
-        "PARK_VIGUERIE", "PARK_BOULE", "PARK_VELODROME",
-        "PARK_PONTS_JUMEAUX", "PARK_BONNEFOY", "PARK_MIRAIL", "PARK_CROIX_PIERRE"
+        "PARK_VIGUERIE", "PARK_BOULE", "PARK_VELODROME"
     };
     
     /**

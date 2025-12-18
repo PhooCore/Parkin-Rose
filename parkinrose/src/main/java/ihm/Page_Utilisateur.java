@@ -86,6 +86,8 @@ public class Page_Utilisateur extends JFrame {
         JPanel panelVehicules = creerOngletVehicules();
         onglets.addTab("Mes véhicules", panelVehicules);
         
+        
+        
         mainPanel.add(onglets, BorderLayout.CENTER);
         
         // Bouton retour
@@ -592,6 +594,8 @@ public class Page_Utilisateur extends JFrame {
         
         return panel;
     }
+    
+    
     
     private void ajouterLigneInfo(JPanel panel, String libelle, String valeur) {
         JPanel ligne = new JPanel(new BorderLayout());
