@@ -172,7 +172,7 @@ public class ControleurResultatsRecherche implements ActionListener {
                     UsagerDAO.getUsagerByEmail(vue.emailUtilisateur).getIdUsager());
                 
                 if (carteTisseo != null) {
-                    message.append("\n✅  Carte Tisséo détectée : ")
+                    message.append("\nCarte Tisséo détectée : ")
                            .append(carteTisseo.substring(0, 4)).append("******")
                            .append("\nStationnement gratuit");
                 }
