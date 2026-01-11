@@ -10,12 +10,15 @@ import modele.dao.UsagerDAO;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Comparator;
 
 public class ControleurAbonnements implements ActionListener {
     
-    // États du contrôleur
     private enum Etat {
         INITIAL,
         CHARGEMENT_ABONNEMENTS,
@@ -27,11 +30,9 @@ public class ControleurAbonnements implements ActionListener {
         ERREUR
     }
     
-    // Références
     private Page_Abonnements vue;
     private Etat etat;
     
-    // Données
     private String emailUtilisateur;
     private int idUsager;
     private Usager usager;
@@ -48,44 +49,48 @@ public class ControleurAbonnements implements ActionListener {
     }
     
     private void initialiserControleur() {
-        chargerUtilisateur();
-        configurerListeners();
-    }
-    
-    private void chargerUtilisateur() {
-        try {
-            this.usager = UsagerDAO.getInstance().findById(emailUtilisateur);
-            if (usager != null) {
-                this.idUsager = usager.getIdUsager();
-                chargerAbonnements();
-            } else {
-                afficherErreur("Utilisateur non trouvé");
-                vue.dispose();
-            }
-        } catch (SQLException e) {
-            afficherErreur("Erreur de chargement: " + e.getMessage());
+        this.usager = UsagerDAO.getUsagerByEmail(emailUtilisateur);
+        if (usager != null) {
+            this.idUsager = usager.getIdUsager();
+            configurerListeners();
+            chargerAbonnements();
+        } else {
+            afficherErreur("Utilisateur non trouvé");
             vue.dispose();
         }
     }
     
     private void configurerListeners() {
-        // Bouton retour
-        vue.getBtnRetour().addActionListener(this);
+        vue.getBtnRetour().addActionListener(e -> retourProfil());
         
-        // Bouton recherche
-        vue.getRechercheBtn().addActionListener(this);
+        vue.getRechercheBtn().addActionListener(e -> appliquerFiltres());
         
-        // Checkboxes de filtrage
-        vue.getCheckGratuit().addActionListener(this);
-        vue.getCheckMoto().addActionListener(this);
-        vue.getCheckAnnuel().addActionListener(this);
-        vue.getCheckHebdo().addActionListener(this);
+        vue.getCheckGratuit().addActionListener(e -> appliquerFiltres());
+        vue.getCheckMoto().addActionListener(e -> appliquerFiltres());
+        vue.getCheckAnnuel().addActionListener(e -> appliquerFiltres());
+        vue.getCheckHebdo().addActionListener(e -> appliquerFiltres());
         
-        // ComboBox de tri
-        vue.getComboTri().addActionListener(this);
+        vue.getComboTri().addActionListener(e -> appliquerFiltres());
         
-        // Barre de recherche (Entrée)
-        vue.getTxtRechercher().addActionListener(this);
+        vue.getTxtRechercher().addActionListener(e -> appliquerFiltres());
+        
+        vue.getTxtRechercher().addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (vue.getTxtRechercher().getText().equals("Rechercher un abonnement...")) {
+                    vue.getTxtRechercher().setText("");
+                    vue.getTxtRechercher().setForeground(java.awt.Color.BLACK);
+                }
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (vue.getTxtRechercher().getText().isEmpty()) {
+                    vue.getTxtRechercher().setText("Rechercher un abonnement...");
+                    vue.getTxtRechercher().setForeground(java.awt.Color.GRAY);
+                }
+            }
+        });
     }
     
     private void chargerAbonnements() {
@@ -94,23 +99,28 @@ public class ControleurAbonnements implements ActionListener {
         SwingWorker<List<Abonnement>, Void> worker = new SwingWorker<List<Abonnement>, Void>() {
             @Override
             protected List<Abonnement> doInBackground() throws Exception {
-                return AbonnementDAO.getInstance().findAll();
+                try {
+                    return AbonnementDAO.getInstance().findAll();
+                } catch (SQLException e) {
+                    throw new Exception("Erreur de chargement des abonnements: " + e.getMessage());
+                }
             }
             
             @Override
             protected void done() {
                 try {
                     abonnementsDisponibles = get();
-                    abonnementsFiltres = abonnementsDisponibles;
+                    abonnementsFiltres = new ArrayList<>(abonnementsDisponibles);
                     etat = Etat.AFFICHAGE_ABONNEMENTS;
+                    
                     vue.mettreAJourTitre(abonnementsFiltres.size());
                     
-                    // Configurer les listeners des boutons d'abonnements
-                    configurerListenersAbonnements();
+                    afficherAbonnements();
                     
                 } catch (Exception e) {
                     etat = Etat.ERREUR;
                     afficherErreur("Erreur de chargement des abonnements");
+                    e.printStackTrace();
                 }
             }
         };
@@ -118,103 +128,151 @@ public class ControleurAbonnements implements ActionListener {
         worker.execute();
     }
     
-    private void configurerListenersAbonnements() {
-        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                // Attendre que les abonnements soient affichés
-                Thread.sleep(100);
-                return null;
+    private void afficherAbonnements() {
+        vue.getPanelAbonnements().removeAll();
+        
+        for (Abonnement abonnement : abonnementsFiltres) {
+            JPanel carte = creerCarteAbonnement(abonnement);
+            vue.getPanelAbonnements().add(carte);
+        }
+        
+        if (abonnementsFiltres.isEmpty()) {
+            String rechercheTexte = vue.getRechercheTexte();
+            String message;
+            
+            if (!rechercheTexte.isEmpty() && !rechercheTexte.equals("Rechercher un abonnement...")) {
+                message = "Aucun abonnement ne correspond à \"" + rechercheTexte + "\"";
+            } else {
+                message = "Aucun abonnement ne correspond à vos critères de filtrage";
             }
             
-            @Override
-            protected void done() {
-                for (Abonnement abonnement : abonnementsFiltres) {
-                    JButton btn = trouverBoutonAbonnement(abonnement);
-                    if (btn != null) {
-                        btn.addActionListener(e -> gererSelectionAbonnement(abonnement));
-                    }
-                }
-            }
-        };
-        worker.execute();
-    }
-    
-    private JButton trouverBoutonAbonnement(Abonnement abonnement) {
-        return trouverBoutonRecursif(vue.getPanelAbonnements(), abonnement.getLibelleAbonnement());
-    }
-    
-    private JButton trouverBoutonRecursif(java.awt.Container container, String libelle) {
-        for (java.awt.Component comp : container.getComponents()) {
-            if (comp instanceof JButton) {
-                JButton btn = (JButton) comp;
-                if (btn.getText().contains("Choisir cet abonnement")) {
-                    java.awt.Container parent = btn.getParent();
-                    if (parent != null) {
-                        for (java.awt.Component compParent : parent.getComponents()) {
-                            if (compParent instanceof JLabel) {
-                                JLabel label = (JLabel) compParent;
-                                if (label.getText().equals(libelle)) {
-                                    return btn;
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if (comp instanceof java.awt.Container) {
-                JButton result = trouverBoutonRecursif((java.awt.Container) comp, libelle);
-                if (result != null) {
-                    return result;
-                }
-            }
+            JLabel lblAucun = new JLabel("<html><center>" + message + "<br>Tentez d'autres critères de recherche</center></html>", SwingConstants.CENTER);
+            lblAucun.setFont(new java.awt.Font("Arial", java.awt.Font.ITALIC, 16));
+            lblAucun.setForeground(java.awt.Color.GRAY);
+            lblAucun.setBorder(BorderFactory.createEmptyBorder(50, 20, 50, 20));
+            vue.getPanelAbonnements().add(lblAucun);
         }
-        return null;
+        
+        vue.getPanelAbonnements().revalidate();
+        vue.getPanelAbonnements().repaint();
+    }
+    
+    private JPanel creerCarteAbonnement(Abonnement abonnement) {
+        JPanel carte = new JPanel(new java.awt.BorderLayout(15, 10));
+        carte.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new java.awt.Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        carte.setBackground(java.awt.Color.WHITE);
+        
+        JPanel panelInfo = new JPanel(new java.awt.GridLayout(0, 1, 5, 5));
+        panelInfo.setBackground(java.awt.Color.WHITE);
+        
+        JLabel lblTitre = new JLabel(abonnement.getLibelleAbonnement());
+        lblTitre.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 16));
+        lblTitre.setForeground(new java.awt.Color(0, 100, 200));
+        
+        JLabel lblTarif = new JLabel(String.format("%.2f €", abonnement.getTarifAbonnement()));
+        lblTarif.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 18));
+        
+        if (abonnement.getTarifAbonnement() == 0) {
+            lblTarif.setForeground(new java.awt.Color(0, 180, 0));
+            lblTarif.setText("GRATUIT");
+        } else {
+            lblTarif.setForeground(new java.awt.Color(0, 150, 0));
+        }
+        
+        JLabel lblId = new JLabel("Code : " + abonnement.getIdAbonnement());
+        lblId.setFont(new java.awt.Font("Arial", java.awt.Font.ITALIC, 12));
+        lblId.setForeground(java.awt.Color.GRAY);
+        
+        JPanel badgesPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 5, 0));
+        badgesPanel.setBackground(java.awt.Color.WHITE);
+        
+        String idUpper = abonnement.getIdAbonnement().toUpperCase();
+        if (idUpper.contains("ANNUEL")) {
+            JLabel badge = new JLabel("Annuel");
+            badge.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 11));
+            badge.setForeground(new java.awt.Color(0, 100, 200));
+            badgesPanel.add(badge);
+        }
+        if (idUpper.contains("HEBDO") || idUpper.contains("SEMAINE")) {
+            JLabel badge = new JLabel("Hebdomadaire");
+            badge.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 11));
+            badge.setForeground(new java.awt.Color(0, 100, 200));
+            badgesPanel.add(badge);
+        }
+        if (idUpper.contains("MOTO")) {
+            JLabel badge = new JLabel("Ⓜ Moto");
+            badge.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 11));
+            badge.setForeground(new java.awt.Color(100, 100, 100));
+            badgesPanel.add(badge);
+        }
+        if (idUpper.contains("RESIDENT")) {
+            JLabel badge = new JLabel("⛫ Résident");
+            badge.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 11));
+            badge.setForeground(new java.awt.Color(150, 75, 0));
+            badgesPanel.add(badge);
+        }
+        if (idUpper.contains("ELECTRIQUE")) {
+            JLabel badge = new JLabel("⚡ Électrique");
+            badge.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 11));
+            badge.setForeground(new java.awt.Color(0, 150, 0));
+            badgesPanel.add(badge);
+        }
+        
+        panelInfo.add(lblTitre);
+        panelInfo.add(lblTarif);
+        panelInfo.add(lblId);
+        panelInfo.add(badgesPanel);
+        
+        JButton btnChoisir = new JButton("Choisir cet abonnement");
+        btnChoisir.setActionCommand("SOUSCRIRE_" + abonnement.getIdAbonnement());
+        
+        boolean aDejaAbonnement = false;
+        try {
+            List<Abonnement> abonnementsUsager = AbonnementDAO.getInstance().getAbonnementsByUsager(idUsager);
+            for (Abonnement abUsager : abonnementsUsager) {
+                if (abUsager.getIdAbonnement().equals(abonnement.getIdAbonnement())) {
+                    aDejaAbonnement = true;
+                    break;
+                }
+            }
+        } catch (SQLException e) {
+        }
+        
+        if (aDejaAbonnement) {
+            btnChoisir.setText("Déjà souscrit");
+            btnChoisir.setEnabled(false);
+            btnChoisir.setBackground(java.awt.Color.GRAY);
+            btnChoisir.setForeground(java.awt.Color.WHITE);
+        } else {
+            btnChoisir.setBackground(new java.awt.Color(0, 120, 215));
+            btnChoisir.setForeground(java.awt.Color.WHITE);
+            
+            btnChoisir.addActionListener(e -> gererSelectionAbonnement(abonnement));
+        }
+        
+        btnChoisir.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+        btnChoisir.setFocusPainted(false);
+        
+        JPanel panelBouton = new JPanel(new java.awt.BorderLayout());
+        panelBouton.setBackground(java.awt.Color.WHITE);
+        panelBouton.add(btnChoisir, java.awt.BorderLayout.CENTER);
+        
+        carte.add(panelInfo, java.awt.BorderLayout.CENTER);
+        carte.add(panelBouton, java.awt.BorderLayout.EAST);
+        
+        return carte;
     }
     
     @Override
     public void actionPerformed(ActionEvent e) {
-        Object source = e.getSource();
-        
-        // Identifier l'action
-        String action = "INCONNU";
-        
-        if (source == vue.getBtnRetour()) {
-            action = "RETOUR";
-        } else if (source == vue.getRechercheBtn()) {
-            action = "FILTRER";
-        } else if (source == vue.getTxtRechercher()) {
-            action = "FILTRER";
-        } else if (source == vue.getCheckGratuit() || 
-                   source == vue.getCheckMoto() || 
-                   source == vue.getCheckAnnuel() || 
-                   source == vue.getCheckHebdo()) {
-            action = "FILTRER";
-        } else if (source == vue.getComboTri()) {
-            action = "FILTRER";
-        }
-        
-        // Traiter selon l'état actuel
-        switch (etat) {
-            case AFFICHAGE_ABONNEMENTS:
-                if (action.equals("RETOUR")) {
-                    retourProfil();
-                } else if (action.equals("FILTRER")) {
-                    appliquerFiltres();
-                }
-                break;
-                
-            case ERREUR:
-                if (action.equals("RETOUR")) {
-                    retourProfil();
-                }
-                break;
-        }
     }
     
     private void appliquerFiltres() {
         if (abonnementsDisponibles == null) return;
         
-        // Récupérer les valeurs des filtres
         String rechercheTexte = vue.getRechercheTexte();
         boolean filtreGratuit = vue.isCheckGratuitSelected();
         boolean filtreMoto = vue.isCheckMotoSelected();
@@ -222,10 +280,8 @@ public class ControleurAbonnements implements ActionListener {
         boolean filtreHebdo = vue.isCheckHebdoSelected();
         String triSelectionne = vue.getTriSelectionne();
         
-        // Appliquer les filtres
-        abonnementsFiltres = new java.util.ArrayList<>(abonnementsDisponibles);
+        abonnementsFiltres = new ArrayList<>(abonnementsDisponibles);
         
-        // Recherche textuelle
         if (!rechercheTexte.isEmpty() && !rechercheTexte.equals("Rechercher un abonnement...")) {
             String rechercheLower = rechercheTexte.toLowerCase();
             abonnementsFiltres.removeIf(a -> 
@@ -234,7 +290,6 @@ public class ControleurAbonnements implements ActionListener {
             );
         }
         
-        // Filtres par catégorie
         if (filtreGratuit) {
             abonnementsFiltres.removeIf(a -> a.getTarifAbonnement() > 0);
         }
@@ -252,28 +307,23 @@ public class ControleurAbonnements implements ActionListener {
                                           && !a.getIdAbonnement().toUpperCase().contains("SEMAINE"));
         }
         
-        // Appliquer le tri
         switch (triSelectionne) {
             case "Prix croissant":
-                abonnementsFiltres.sort(java.util.Comparator.comparingDouble(Abonnement::getTarifAbonnement));
+                abonnementsFiltres.sort(Comparator.comparingDouble(Abonnement::getTarifAbonnement));
                 break;
             case "Prix décroissant":
-                abonnementsFiltres.sort(java.util.Comparator.comparingDouble(Abonnement::getTarifAbonnement).reversed());
+                abonnementsFiltres.sort(Comparator.comparingDouble(Abonnement::getTarifAbonnement).reversed());
                 break;
             case "Ordre alphabétique (A-Z)":
-                abonnementsFiltres.sort(java.util.Comparator.comparing(Abonnement::getLibelleAbonnement));
+                abonnementsFiltres.sort(Comparator.comparing(Abonnement::getLibelleAbonnement));
                 break;
             case "Ordre alphabétique (Z-A)":
-                abonnementsFiltres.sort(java.util.Comparator.comparing(Abonnement::getLibelleAbonnement).reversed());
+                abonnementsFiltres.sort(Comparator.comparing(Abonnement::getLibelleAbonnement).reversed());
                 break;
         }
         
-        // Mettre à jour la vue
-        vue.mettreAJourAffichageAbonnements(abonnementsFiltres);
         vue.mettreAJourTitre(abonnementsFiltres.size());
-        
-        // Reconfigurer les listeners des boutons
-        configurerListenersAbonnements();
+        afficherAbonnements();
     }
     
     private void gererSelectionAbonnement(Abonnement abonnement) {
@@ -432,7 +482,7 @@ public class ControleurAbonnements implements ActionListener {
         );
     }
     
-    // Getters pour le débogage
+
     public Etat getEtat() {
         return etat;
     }
