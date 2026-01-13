@@ -722,4 +722,103 @@ e.printStackTrace();
 return false;
 }
 }
+    
+    public static boolean prolongerStationnement(int idStationnement, int dureeSupplementaireMinutes) {
+        String sql = "UPDATE Stationnement SET " +
+                    "date_fin = DATE_ADD(date_fin, INTERVAL ? MINUTE) " +
+                    "WHERE id_stationnement = ? AND type_stationnement = 'VOIRIE' AND statut = 'ACTIF'";
+        
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, dureeSupplementaireMinutes);
+            stmt.setInt(2, idStationnement);
+            
+            int lignesAffectees = stmt.executeUpdate();
+            return lignesAffectees > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Erreur prolongation stationnement: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    public static boolean prolongerStationnementAvecPaiement(int idStationnement, 
+            int dureeSupplementaireMinutes,
+            double coutSupplementaire, 
+            String idPaiement) {
+    	Connection conn = null;
+    	try {
+    		conn = MySQLConnection.getConnection();
+    		conn.setAutoCommit(false);
+
+    		// 1. Mettre à jour la date de fin et le coût
+    		String sql = "UPDATE Stationnement SET " +
+    				"date_fin = DATE_ADD(date_fin, INTERVAL ? MINUTE), " +
+    				"cout = cout + ?, " +
+    				"duree_heures = duree_heures + ?, " +
+    				"duree_minutes = duree_minutes + ? " +
+    				"WHERE id_stationnement = ? AND type_stationnement = 'VOIRIE' AND statut = 'ACTIF'";
+
+    		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+    			stmt.setInt(1, dureeSupplementaireMinutes);
+    			stmt.setDouble(2, coutSupplementaire);
+    			stmt.setInt(3, dureeSupplementaireMinutes / 60); // heures
+    			stmt.setInt(4, dureeSupplementaireMinutes % 60); // minutes
+    			stmt.setInt(5, idStationnement);
+
+    			int lignesAffectees = stmt.executeUpdate();
+
+    			if (lignesAffectees > 0) {
+    				conn.commit();
+    				return true;
+    			} else {
+    				conn.rollback();
+    				return false;
+    			}
+    		}
+
+    	} catch (SQLException e) {
+    		try {
+    			if (conn != null) conn.rollback();
+    		} catch (SQLException ex) {
+    			System.err.println("Erreur rollback: " + ex.getMessage());
+    		}
+    		System.err.println("Erreur prolongation avec paiement: " + e.getMessage());
+    		e.printStackTrace();
+    		return false;
+    	} finally {
+    		try {
+    			if (conn != null) {
+    				conn.setAutoCommit(true);
+    				conn.close();
+    			}
+    		}catch (SQLException e) {
+    			System.err.println("Erreur fermeture connexion: " + e.getMessage());
+    		}
+    	}
+    }
+
+    /**
+     * Récupère les informations d'un stationnement pour la prolongation
+     * @param idStationnement ID du stationnement
+     * @return Le stationnement ou null
+     */
+    public Stationnement getStationnementPourProlongation(int idStationnement) throws SQLException {
+    	String sql = "SELECT s.* FROM Stationnement s " +
+    			"WHERE s.id_stationnement = ? AND s.statut = 'ACTIF' AND s.type_stationnement = 'VOIRIE'";
+
+    	try (Connection conn = MySQLConnection.getConnection();
+    			PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+    		stmt.setInt(1, idStationnement);
+    		try (ResultSet rs = stmt.executeQuery()) {
+    			if (rs.next()) {
+    				return creerInstance(rs);
+    			}
+    		}
+    	}
+    	return null;
+    }
 }

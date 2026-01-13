@@ -2,15 +2,19 @@ package ihm;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import modele.Stationnement;
 import modele.Usager;
+import modele.Zone;
 import modele.dao.StationnementDAO;
 import modele.dao.TarifParkingDAO;
 import modele.dao.UsagerDAO;
+import modele.dao.ZoneDAO;
 import controleur.ControleurStationnementEnCours;
 
 public class Page_Stationnement_En_Cours extends JFrame {
@@ -21,6 +25,8 @@ public class Page_Stationnement_En_Cours extends JFrame {
     private JPanel panelInfo;
     private JButton btnArreter;
     private JButton btnRetour;
+    private JButton btnProlonger;
+
     
     public Page_Stationnement_En_Cours(String email) {
         this.emailUtilisateur = email;
@@ -60,6 +66,15 @@ public class Page_Stationnement_En_Cours extends JFrame {
         // Bouton retour
         btnRetour = new JButton("Retour");
         panelBoutons.add(btnRetour);
+        
+     // Bouton prolonger (visible uniquement pour voirie)
+        btnProlonger = new JButton("Prolonger le stationnement");
+        btnProlonger.setBackground(new Color(0, 153, 255));
+        btnProlonger.setForeground(Color.WHITE);
+        btnProlonger.setFocusPainted(false);
+        btnProlonger.addActionListener(e -> gérerProlongationStationnement());
+        btnProlonger.setVisible(false); // Caché par défaut
+        panelBoutons.add(btnProlonger);
         
         // Bouton arrêter
         btnArreter = new JButton("Arrêter le stationnement");
@@ -117,6 +132,7 @@ public class Page_Stationnement_En_Cours extends JFrame {
             lblAucun.setForeground(Color.GRAY);
             panelInfo.add(lblAucun);
             btnArreter.setEnabled(false);
+            btnProlonger.setVisible(false);
         } else {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             
@@ -140,6 +156,9 @@ public class Page_Stationnement_En_Cours extends JFrame {
                         ajouterLigneInfo("Temps restant:", "Temps écoulé");
                     }
                 }
+                
+                // Afficher le bouton prolonger pour la voirie
+                btnProlonger.setVisible(true);
                 
             } else if (stationnementActif.estParking()) {
                 ajouterLigneInfo("Type:", "Parking");
@@ -166,6 +185,9 @@ public class Page_Stationnement_En_Cours extends JFrame {
                         ajouterLigneInfo("Coût estimé:", "Calcul en cours...");
                     }
                 }
+                
+                // Cacher le bouton prolonger pour le parking
+                btnProlonger.setVisible(false);
             }
             
             ajouterLigneInfo("Statut:", stationnementActif.getStatut());
@@ -203,7 +225,6 @@ public class Page_Stationnement_En_Cours extends JFrame {
             return;
         }
         
-        // UN SEUL message de confirmation
         int confirmation = JOptionPane.showConfirmDialog(this,
             "Êtes-vous sûr de vouloir arrêter ce stationnement ?\n\n" +
             "Véhicule: " + stationnementActif.getTypeVehicule() + " - " + stationnementActif.getPlaqueImmatriculation() + "\n" +
@@ -309,7 +330,7 @@ public class Page_Stationnement_En_Cours extends JFrame {
         );
         
         if (succes) {
-            String message = "Stationnement terminé !\nParking gratuit ✓";
+            String message = "Stationnement terminé !\nParking gratuit";
             
             JOptionPane.showMessageDialog(this,
                 message,
@@ -364,5 +385,219 @@ public class Page_Stationnement_En_Cours extends JFrame {
     @Override
     public void dispose() {
         super.dispose();
+    }
+    
+    private void gérerProlongationStationnement() {
+        if (stationnementActif == null || !stationnementActif.estVoirie()) {
+            JOptionPane.showMessageDialog(this,
+                "Seuls les stationnements en voirie peuvent être prolongés",
+                "Information",
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        try {
+            // Récupérer les informations de la zone
+            Zone zone = ZoneDAO.getInstance().getZoneById(stationnementActif.getIdTarification());
+            if (zone == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Impossible de trouver la zone de stationnement",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Créer un panel principal avec BorderLayout
+            JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+            mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            
+            // Panel du haut : Informations sur les tarifs de la zone
+            JPanel infoZonePanel = new JPanel(new BorderLayout());
+            infoZonePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(0, 102, 204), 2),
+                "Tarifs de la zone " + zone.getLibelleZone()
+            ));
+            
+            JTextArea tarifInfo = new JTextArea(zone.getAffichage());
+            tarifInfo.setEditable(false);
+            tarifInfo.setBackground(new Color(240, 248, 255));
+            tarifInfo.setFont(new Font("Arial", Font.PLAIN, 12));
+            tarifInfo.setWrapStyleWord(true);
+            tarifInfo.setLineWrap(true);
+            tarifInfo.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            infoZonePanel.add(tarifInfo, BorderLayout.CENTER);
+            
+            mainPanel.add(infoZonePanel, BorderLayout.NORTH);
+            
+            // Panel du centre : Sélection de la durée
+            JPanel selectionPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+            selectionPanel.setBorder(BorderFactory.createTitledBorder("Durée supplémentaire"));
+            
+            selectionPanel.add(new JLabel("Durée à ajouter:"));
+            selectionPanel.add(new JLabel(""));
+            
+            String[] heures = {"0", "1", "2", "3", "4", "5", "6", "7", "8"};
+            String[] minutes = {"0", "15", "30", "45"};
+            
+            JComboBox<String> comboHeures = new JComboBox<>(heures);
+            JComboBox<String> comboMinutes = new JComboBox<>(minutes);
+            comboMinutes.setSelectedItem("15"); // 15 min par défaut
+            
+            JPanel dureePan = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            dureePan.add(comboHeures);
+            dureePan.add(new JLabel("h"));
+            dureePan.add(comboMinutes);
+            dureePan.add(new JLabel("min"));
+            
+            selectionPanel.add(new JLabel("Durée:"));
+            selectionPanel.add(dureePan);
+            
+            // Label pour afficher le coût en temps réel
+            JLabel lblCoutCalcule = new JLabel("0.00 €");
+            lblCoutCalcule.setFont(new Font("Arial", Font.BOLD, 14));
+            lblCoutCalcule.setForeground(new Color(0, 100, 0));
+            
+            selectionPanel.add(new JLabel("Coût supplémentaire:"));
+            selectionPanel.add(lblCoutCalcule);
+            
+            mainPanel.add(selectionPanel, BorderLayout.CENTER);
+            
+            // Listener pour recalculer le coût en temps réel
+            ItemListener calculCoutListener = e -> {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    int h = Integer.parseInt((String) comboHeures.getSelectedItem());
+                    int m = Integer.parseInt((String) comboMinutes.getSelectedItem());
+                    int dureeMin = (h * 60) + m;
+                    
+                    if (dureeMin > 0) {
+                        double cout = zone.calculerCout(dureeMin);
+                        if (cout == 0.0) {
+                            lblCoutCalcule.setText("GRATUIT");
+                            lblCoutCalcule.setForeground(new Color(0, 150, 0));
+                        } else {
+                            lblCoutCalcule.setText(String.format("%.2f €", cout));
+                            lblCoutCalcule.setForeground(new Color(0, 100, 0));
+                        }
+                    } else {
+                        lblCoutCalcule.setText("0.00 €");
+                        lblCoutCalcule.setForeground(Color.GRAY);
+                    }
+                }
+            };
+            
+            comboHeures.addItemListener(calculCoutListener);
+            comboMinutes.addItemListener(calculCoutListener);
+            
+            // Calculer le coût initial (15 minutes par défaut)
+            int dureeInitiale = 15;
+            double coutInitial = zone.calculerCout(dureeInitiale);
+            if (coutInitial == 0.0) {
+                lblCoutCalcule.setText("GRATUIT");
+                lblCoutCalcule.setForeground(new Color(0, 150, 0));
+            } else {
+                lblCoutCalcule.setText(String.format("%.2f €", coutInitial));
+                lblCoutCalcule.setForeground(new Color(0, 100, 0));
+            }
+            
+            // Afficher le dialogue
+            int result = JOptionPane.showConfirmDialog(this, mainPanel,
+                "Prolonger le stationnement", JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
+            
+            if (result == JOptionPane.OK_OPTION) {
+                int heuresSupp = Integer.parseInt((String) comboHeures.getSelectedItem());
+                int minutesSupp = Integer.parseInt((String) comboMinutes.getSelectedItem());
+                
+                if (heuresSupp == 0 && minutesSupp == 0) {
+                    JOptionPane.showMessageDialog(this,
+                        "Veuillez sélectionner une durée à ajouter",
+                        "Durée invalide",
+                        JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                int dureeSupplementaireMinutes = (heuresSupp * 60) + minutesSupp;
+                double coutSupplementaire = zone.calculerCout(dureeSupplementaireMinutes);
+                
+                // Demander confirmation avec le coût
+                String messageConfirmation = String.format(
+                    "Confirmez-vous la prolongation ?\n\n" +
+                    "Durée supplémentaire: %dh%02dmin\n" +
+                    "Coût supplémentaire: %.2f €\n\n" +
+                    "Nouvelle fin de stationnement: %s",
+                    heuresSupp, minutesSupp, coutSupplementaire,
+                    stationnementActif.getDateFin().plusMinutes(dureeSupplementaireMinutes)
+                        .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                );
+                
+                int confirmation = JOptionPane.showConfirmDialog(this,
+                    messageConfirmation,
+                    "Confirmation de prolongation",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+                
+                if (confirmation == JOptionPane.YES_OPTION) {
+                    if (coutSupplementaire > 0.01) {
+                        // Paiement nécessaire
+                        ouvrirPagePaiementProlongation(zone, heuresSupp, minutesSupp, 
+                            dureeSupplementaireMinutes, coutSupplementaire);
+                    } else {
+                        // Prolongation gratuite
+                        prolongerStationnementGratuit(dureeSupplementaireMinutes);
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                "Erreur lors de la prolongation: " + e.getMessage(),
+                "Erreur",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Nouvelle méthode pour ouvrir la page de paiement pour la prolongation
+    private void ouvrirPagePaiementProlongation(Zone zone, int heures, int minutes, 
+                                                int dureeMinutes, double cout) {
+        Page_Paiement pagePaiement = new Page_Paiement(
+            cout,
+            emailUtilisateur,
+            stationnementActif.getTypeVehicule(),
+            stationnementActif.getPlaqueImmatriculation(),
+            zone.getIdZone(),
+            zone.getLibelleZone(),
+            heures,
+            minutes,
+            stationnementActif.getIdStationnement(), // On passe l'ID pour la prolongation
+            null
+        );
+        pagePaiement.setVisible(true);
+        dispose();
+    }
+
+    // Nouvelle méthode pour prolonger gratuitement
+    private void prolongerStationnementGratuit(int dureeSupplementaireMinutes) {
+        boolean succes = StationnementDAO.prolongerStationnement(
+            stationnementActif.getIdStationnement(), 
+            dureeSupplementaireMinutes
+        );
+        
+        if (succes) {
+            JOptionPane.showMessageDialog(this,
+                "Stationnement prolongé avec succès !",
+                "Succès",
+                JOptionPane.INFORMATION_MESSAGE);
+            rafraichirAffichage();
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Erreur lors de la prolongation du stationnement",
+                "Erreur",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Getter pour le contrôleur
+    public JButton getBtnProlonger() {
+        return btnProlonger;
     }
 }
