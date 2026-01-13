@@ -16,6 +16,7 @@ import java.util.Map;
 import modele.Stationnement;
 import modele.Parking;
 import modele.Usager;
+import modele.dao.FeedbackDAO;
 import modele.dao.MySQLConnection;
 import modele.dao.ParkingDAO;
 import modele.dao.StationnementDAO;
@@ -38,6 +39,7 @@ public class Page_Principale extends JFrame {
     private Map<String, JButton> boutonsZones = new HashMap<>();
     private JButton btnAdmin;
     private CarteOSMPanel carteOSM;
+    private boolean hasUnreadMessages = false;
     public Page_Principale(String email) {
         this.emailUtilisateur = email;
         this.usager = UsagerDAO.getUsagerByEmail(email);
@@ -72,6 +74,11 @@ public class Page_Principale extends JFrame {
         JPanel bottomPanel = creerBottomPanel();
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
         
+        updateStationnementIcon();
+        if (usager != null && usager.isAdmin()) {
+            ajouterBoutonAdmin();
+        }
+        updateMessagerieIcon();
         updateStationnementIcon();
         if (usager != null && usager.isAdmin()) {
             ajouterBoutonAdmin();
@@ -181,11 +188,9 @@ public class Page_Principale extends JFrame {
                 JLabel lblLoupe = new JLabel(new ImageIcon(imageRedimensionnee), SwingConstants.CENTER);
                 btnSearch.add(lblLoupe);
             } else {
-                btnSearch.setText("🔍");
                 btnSearch.setFont(new Font("Arial", Font.PLAIN, 14));
             }
         } catch (Exception e) {
-            btnSearch.setText("🔍");
             btnSearch.setFont(new Font("Arial", Font.PLAIN, 14));
         }
         
@@ -225,165 +230,28 @@ public class Page_Principale extends JFrame {
             
             panelGauche.add(btnAdmin);
         }
-        // PANEL CENTRE : Zones
-        JPanel panelCentre = new JPanel();
-        panelCentre.setBackground(new Color(240, 240, 240));
-        panelCentre.setLayout(new BoxLayout(panelCentre, BoxLayout.Y_AXIS));
         
-        // Titre des zones
-        JLabel lblTitreZones = new JLabel("Afficher une zone:");
-        lblTitreZones.setFont(new Font("Arial", Font.BOLD, 12));
-        lblTitreZones.setForeground(Color.DARK_GRAY);
-        lblTitreZones.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelCentre.add(lblTitreZones);
+
         
-        // Panel des boutons de zones
-        JPanel panelBoutonsZones = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        panelBoutonsZones.setBackground(new Color(240, 240, 240));
-        panelBoutonsZones.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-        
-        // Bouton pour masquer toutes les zones
-        JButton btnMasquerZones = new JButton("X");
-        btnMasquerZones.setToolTipText("Masquer toutes les zones");
-        btnMasquerZones.setPreferredSize(new Dimension(35, 35));
-        btnMasquerZones.setBackground(new Color(220, 220, 220));
-        btnMasquerZones.setFont(new Font("Arial", Font.BOLD, 14));
-        btnMasquerZones.setFocusPainted(false);
-        btnMasquerZones.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.DARK_GRAY, 1),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-        
-        btnMasquerZones.addActionListener(e -> {
-            if (cartePanel != null) {
-                cartePanel.cacherZone();
-                // Réinitialiser tous les boutons
-                for (JButton btn : boutonsZones.values()) {
-                    btn.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-                }
-            }
-        });
-        
-        panelBoutonsZones.add(btnMasquerZones);
-        panelBoutonsZones.add(Box.createRigidArea(new Dimension(5, 0)));
-        
-        // Définition des zones avec vos PNG
-        String[][] zones = {
-            {"Zone Jaune", "ZJ", "/images/ZJ.png", "255,193,7"},
-            {"Zone Rouge", "ZR", "/images/ZR.png", "220,53,69"},
-            {"Zone Orange", "ZO", "/images/ZO.png", "255,165,0"},
-            {"Zone Bleue", "ZB", "/images/ZB.png", "52,152,219"},
-            {"Zone Verte", "ZV", "/images/ZV.png", "60,179,113"}
-        };
-        
-        // Créer un bouton pour chaque zone
-        for (String[] zone : zones) {
-            String nomZone = zone[0];
-            String codeZone = zone[1];
-            String cheminImage = zone[2];
-            Color couleur = parseCouleur(zone[3]);
-            
-            JButton btnZone = new JButton(codeZone);
-            btnZone.setToolTipText(nomZone + " - Cliquez pour afficher");
-            btnZone.setPreferredSize(new Dimension(38, 38));
-            btnZone.setBackground(couleur);
-            btnZone.setForeground(Color.WHITE);
-            btnZone.setFont(new Font("Arial", Font.BOLD, 11));
-            btnZone.setFocusPainted(false);
-            btnZone.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-            
-            // Effet de survol
-            btnZone.addMouseListener(new MouseAdapter() {
-                public void mouseEntered(MouseEvent evt) {
-                    btnZone.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-                }
-                public void mouseExited(MouseEvent evt) {
-                    // Ne pas changer si c'est la zone active
-                    if (cartePanel != null && cartePanel.isZoneVisible() && 
-                        cartePanel.getCodeZoneActuelle() != null &&
-                        cartePanel.getCodeZoneActuelle().equals(codeZone)) {
-                        btnZone.setBorder(BorderFactory.createLineBorder(Color.BLACK, 3));
-                    } else {
-                        btnZone.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-                    }
-                }
-            });
-            
-            // Stocker la référence
-            boutonsZones.put(codeZone, btnZone);
-            
-            btnZone.addActionListener(e -> {
-                if (cartePanel != null) {
-                    // Afficher la zone avec opacité fixe à 50%
-                    boolean success = cartePanel.afficherZone(nomZone, codeZone, cheminImage, 0.5f);
-                    
-                    if (success) {
-                        // Mettre en surbrillance le bouton sélectionné
-                        for (Map.Entry<String, JButton> entry : boutonsZones.entrySet()) {
-                            JButton btn = entry.getValue();
-                            if (entry.getKey().equals(codeZone)) {
-                                btn.setBorder(BorderFactory.createLineBorder(Color.BLACK, 3));
-                            } else {
-                                btn.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-                            }
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(Page_Principale.this,
-                            "<html><b>Impossible de charger la zone " + codeZone + "</b><br>" +
-                            "Vérifiez que le fichier <i>" + cheminImage + "</i><br>" +
-                            "existe dans le dossier <i>images/</i></html>",
-                            "Erreur de chargement",
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-            });
-            
-            panelBoutonsZones.add(btnZone);
-            panelBoutonsZones.add(Box.createRigidArea(new Dimension(2, 0)));
-        }
-        
-        // Bouton "Info zones"
-        JButton btnInfoZones = new JButton("Zones ???");
-        btnInfoZones.setToolTipText("Information sur les zones");
-        btnInfoZones.setPreferredSize(new Dimension(95, 35));
-        btnInfoZones.setBackground(new Color(52, 152, 219));
-        btnInfoZones.setForeground(Color.WHITE);
-        btnInfoZones.setFont(new Font("Arial", Font.BOLD, 14));
-        btnInfoZones.setFocusPainted(false);
-        btnInfoZones.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(41, 128, 185), 1),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-        
-        btnInfoZones.addActionListener(e -> {
-            ExplicationZoneToulouse fenetreZones = new ExplicationZoneToulouse();
-            fenetreZones.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            fenetreZones.setVisible(true);
-        });
-        
-        panelBoutonsZones.add(Box.createRigidArea(new Dimension(10, 0)));
-        panelBoutonsZones.add(btnInfoZones);
-        
-        panelCentre.add(panelBoutonsZones);
-        
-        // PANEL DROIT : Icônes utilisateur
         JPanel panelDroit = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         panelDroit.setBackground(new Color(240, 240, 240));
+
         btnMessagerie = new JButton();
         btnMessagerie.setLayout(new BorderLayout());
         btnMessagerie.setBackground(new Color(240, 240, 240));
         btnMessagerie.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         btnMessagerie.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnMessagerie.setPreferredSize(new Dimension(140, 70)); 
-        
-        //Icone messagerie
-        JLabel lblIconeMess = chargerIconeLabel("/images/email.png", 40, 40, "M");
-        JLabel lblTextMess = new JLabel("Messagerie", SwingConstants.CENTER);
+
+        JLabel lblIconeMess = chargerIconeLabel("/images/email.png", 40, 40, "F");
+
+        JLabel lblTextMess = new JLabel("Feedback", SwingConstants.CENTER);
         lblTextMess.setFont(new Font("Arial", Font.PLAIN, 12));
-        lblTextMess.setForeground(Color.DARK_GRAY);
-        
+        lblTextMess.setForeground(Color.DARK_GRAY);      
+
         btnMessagerie.add(lblIconeMess, BorderLayout.CENTER);
-        btnMessagerie.add(lblTextMess, BorderLayout.SOUTH); 
+        btnMessagerie.add(lblTextMess, BorderLayout.SOUTH);
+       
 
         // Bouton Stationnement
         btnStationnement = new JButton();
@@ -424,7 +292,6 @@ public class Page_Principale extends JFrame {
         
         // ========== ASSEMBLAGE FINAL ==========
         headerPanel.add(panelGauche, BorderLayout.WEST);
-        headerPanel.add(panelCentre, BorderLayout.CENTER);
         headerPanel.add(panelDroit, BorderLayout.EAST);
         
         return headerPanel;
@@ -519,7 +386,10 @@ public class Page_Principale extends JFrame {
     }
     
     private void startStationnementCheck() {
-        timer = new Timer(10000, e -> updateStationnementIcon());
+        timer = new Timer(10000, e -> {
+            updateStationnementIcon();
+            updateMessagerieIcon(); // Cette ligne doit être présente
+        });
         timer.start();
     }
     
@@ -580,15 +450,87 @@ public class Page_Principale extends JFrame {
     
     @Override
     public void dispose() {
-        // Nettoyer les ressources JavaFX
-        if (carteOSM != null) {
-            carteOSM.nettoyer();
-        }
         
         if (timer != null) {
             timer.stop();
         }
         super.dispose();
+    }
+    private void checkUnreadMessages() {
+        if (usager != null) {
+            hasUnreadMessages = FeedbackDAO.hasUnreadMessages(usager.getIdUsager());
+        }
+    }
+    public void updateMessagerieIcon() {
+        checkUnreadMessages();
+        
+        if (hasUnreadMessages) {
+            btnMessagerie.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(240, 240, 240), 8),
+                BorderFactory.createLineBorder(Color.RED, 2)
+            ));
+            
+            Component[] components = btnMessagerie.getComponents();
+            if (components.length >= 2) {
+                if (components[0] instanceof JPanel) {
+                    JPanel iconPanel = (JPanel) components[0];
+                    
+                    
+                    for (Component comp : iconPanel.getComponents()) {
+                        if (comp instanceof JLabel && comp.getName() != null && comp.getName().equals("notificationBadge")) {
+                            iconPanel.remove(comp);
+                        }
+                    }
+
+                    JLabel badge = new JLabel("•");
+                    badge.setName("notificationBadge");
+                    badge.setFont(new Font("Arial", Font.BOLD, 24));
+                    badge.setForeground(Color.RED);
+                    badge.setHorizontalAlignment(SwingConstants.RIGHT);
+                    badge.setVerticalAlignment(SwingConstants.TOP);
+                    
+                    iconPanel.add(badge, BorderLayout.NORTH);
+                }
+                
+
+                JLabel lblText = (JLabel) components[1];
+                lblText.setText("<html><center><b>Feedback</b><br><font color='red' size='2'>● NOUVEAU</font></center></html>");
+                lblText.setFont(new Font("Arial", Font.BOLD, 9));
+            }
+        } else {
+
+            btnMessagerie.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+            
+            Component[] components = btnMessagerie.getComponents();
+            if (components.length >= 2) {
+                if (components[0] instanceof JPanel) {
+                    JPanel iconPanel = (JPanel) components[0];
+                    
+
+                    for (Component comp : iconPanel.getComponents()) {
+                        if (comp instanceof JLabel && comp.getName() != null && comp.getName().equals("notificationBadge")) {
+                            iconPanel.remove(comp);
+                        }
+                    }
+                }
+                
+
+                JLabel lblText = (JLabel) components[1];
+                lblText.setText("Feedback");
+                lblText.setForeground(Color.DARK_GRAY);
+                lblText.setFont(new Font("Arial", Font.PLAIN, 12));
+            }
+        }
+        
+        btnMessagerie.revalidate();
+        btnMessagerie.repaint();
+    }
+    public void markMessagesAsRead() {
+        if (usager != null) {
+            FeedbackDAO.markMessagesAsRead(usager.getIdUsager());
+            hasUnreadMessages = false;
+            updateMessagerieIcon();
+        }
     }
     public static void main(String[] args) {
         java.awt.EventQueue.invokeLater(new Runnable() {

@@ -44,4 +44,23 @@ public abstract class DaoModele<T> implements Dao<T> {
         }
         return resultats.get(0);
     }
+    
+    protected int miseAJourReturnId(Requete<T> req, T donnee) throws SQLException {
+        Connection conn = MySQLConnection.getConnection();
+        PreparedStatement prSt = conn.prepareStatement(req.requete(), Statement.RETURN_GENERATED_KEYS);
+        req.parametres(prSt, donnee);
+        int rowsAffected = prSt.executeUpdate();
+        
+        if (donnee instanceof modele.Feedback) {
+            ResultSet rs = prSt.getGeneratedKeys();
+            if (rs.next()) {
+                modele.Feedback feedback = (modele.Feedback) donnee;
+                feedback.setIdFeedback(rs.getInt(1));
+            }
+            rs.close();
+        }
+        
+        prSt.close();
+        return rowsAffected;
+    }
 }

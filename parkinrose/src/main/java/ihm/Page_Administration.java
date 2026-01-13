@@ -12,6 +12,7 @@ public class Page_Administration extends JFrame {
     // Références aux composants
     private JPanel panelUtilisateurs;
     private JPanel panelParkings;
+    private JPanel panelFeedbacks; // NOUVEAU : Panel pour les feedbacks
     private JButton btnRetour;
     
     public Page_Administration(String emailAdmin) {
@@ -25,7 +26,7 @@ public class Page_Administration extends JFrame {
     private void initialisePage() {
         setTitle("Administration - Parkin'Rose");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(800, 500);
+        setSize(800, 600); // Augmenté un peu la hauteur
         setLocationRelativeTo(null);
         setResizable(false);
         
@@ -50,9 +51,9 @@ public class Page_Administration extends JFrame {
         mainPanel.add(panelTitre, BorderLayout.NORTH);
         
         // === PANEL CENTRE - OPTIONS ===
-        JPanel panelOptions = new JPanel(new GridLayout(2, 1, 30, 30));
+        JPanel panelOptions = new JPanel(new GridLayout(3, 1, 30, 30)); // Changé à 3 lignes
         panelOptions.setBackground(Color.WHITE);
-        panelOptions.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+        panelOptions.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40)); // Réduit le padding
         
         // Option 1 : Gestion des utilisateurs
         panelUtilisateurs = creerPanelOption(
@@ -66,8 +67,15 @@ public class Page_Administration extends JFrame {
             new Color(60, 179, 113) // Vert
         );
         
+        // NOUVELLE OPTION 3 : Répondre au feedback
+        panelFeedbacks = creerPanelOption(
+            "Répondre au Feedback",
+            new Color(186, 85, 211) // Violet
+        );
+        
         panelOptions.add(panelUtilisateurs);
         panelOptions.add(panelParkings);
+        panelOptions.add(panelFeedbacks);
         
         mainPanel.add(panelOptions, BorderLayout.CENTER);
         
@@ -97,9 +105,9 @@ public class Page_Administration extends JFrame {
         panel.setBackground(new Color(240, 240, 240));
         panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Titre uniquement
+        // Titre uniquement (conservé comme votre version originale)
         JLabel lblTitre = new JLabel(titre);
-        lblTitre.setFont(new Font("Arial", Font.BOLD, 28));
+        lblTitre.setFont(new Font("Arial", Font.BOLD, 24));
         lblTitre.setForeground(couleur);
         
         panel.add(lblTitre);
@@ -142,6 +150,24 @@ public class Page_Administration extends JFrame {
         }
     }
     
+    // NOUVELLE MÉTHODE : Gestion du survol pour le panel feedbacks
+    public void survolPanelFeedbacks(boolean survol) {
+        Color couleur = new Color(186, 85, 211);
+        if (survol) {
+            panelFeedbacks.setBackground(new Color(250, 250, 250));
+            panelFeedbacks.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(couleur.brighter(), 3),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            ));
+        } else {
+            panelFeedbacks.setBackground(new Color(240, 240, 240));
+            panelFeedbacks.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(couleur, 3),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            ));
+        }
+    }
+    
     // Getters pour le contrôleur
     public JPanel getPanelUtilisateurs() {
         return panelUtilisateurs;
@@ -149,6 +175,11 @@ public class Page_Administration extends JFrame {
     
     public JPanel getPanelParkings() {
         return panelParkings;
+    }
+    
+    // NOUVEAU GETTER : Panel feedbacks
+    public JPanel getPanelFeedbacks() {
+        return panelFeedbacks;
     }
     
     public JButton getBtnRetour() {
@@ -159,10 +190,5 @@ public class Page_Administration extends JFrame {
         return emailAdmin;
     }
     
-    // Méthode main pour tester
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new Page_Administration("admin@pr.com").setVisible(true);
-        });
-    }
+
 }

@@ -4,6 +4,7 @@ import ihm.Page_Administration;
 import ihm.PageGestionUtilisateurs;
 import ihm.Page_Principale;
 import ihm.CarteAdminOSMPanel;
+import ihm.Page_Gestion_Feedback;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,6 +21,7 @@ public class ControleurAdministration implements ActionListener {
         ADMINISTRATION,
         GESTION_UTILISATEURS,
         GESTION_PARKINGS,
+        GESTION_FEEDBACKS, 
         RETOUR
     }
     
@@ -58,6 +60,7 @@ public class ControleurAdministration implements ActionListener {
         // Configurer les panels d'options
         configurerPanelUtilisateurs();
         configurerPanelParkings();
+        configurerPanelFeedbacks();  // AJOUTÉ
     }
     
     private void configurerPanelUtilisateurs() {
@@ -101,6 +104,30 @@ public class ControleurAdministration implements ActionListener {
                 @Override
                 public void mouseExited(MouseEvent e) {
                     vue.survolPanelParkings(false);
+                }
+            });
+        }
+    }
+    
+    // AJOUTÉ : Configuration du panel feedbacks
+    private void configurerPanelFeedbacks() {
+        JPanel panelFeedbacks = vue.getPanelFeedbacks();
+        if (panelFeedbacks != null) {
+            panelFeedbacks.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    etat = Etat.GESTION_FEEDBACKS;
+                    ouvrirGestionFeedbacks();
+                }
+                
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    vue.survolPanelFeedbacks(true);
+                }
+                
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    vue.survolPanelFeedbacks(false);
                 }
             });
         }
@@ -176,6 +203,13 @@ public class ControleurAdministration implements ActionListener {
         vue.setVisible(false);
     }
     
+    
+    private void ouvrirGestionFeedbacks() {
+        Page_Gestion_Feedback pageFeedback = new Page_Gestion_Feedback(emailAdmin);
+        pageFeedback.setVisible(true);
+        vue.dispose();
+    }
+    
     private void retourAccueil() {
         Page_Principale pagePrincipale = new Page_Principale(emailAdmin);
         pagePrincipale.setVisible(true);
@@ -186,7 +220,7 @@ public class ControleurAdministration implements ActionListener {
         return emailAdmin != null && (emailAdmin.contains("admin") || emailAdmin.equals("admin@pr.com"));
     }
     
-    // Getters pour le débogage
+
     public Etat getEtat() {
         return etat;
     }

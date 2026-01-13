@@ -328,18 +328,27 @@ public class ControleurPrincipale implements ActionListener {
     private void ouvrirMessagerie() {
         try {
             SwingUtilities.invokeLater(() -> {
-                Page_Feedback pageFeedback = new Page_Feedback(emailUtilisateur);
+                Page_Feedback pageFeedback = new Page_Feedback(emailUtilisateur, vue);
                 pageFeedback.setVisible(true);
+                
+                // Cacher la page principale (pas de dispose!)
+                vue.setVisible(false);
                 
                 pageFeedback.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosed(java.awt.event.WindowEvent e) {
                         etat = EtatPrincipal.ACCUEIL;
+                        // Réafficher la même page principale
+                        vue.setVisible(true);
+                        vue.updateMessagerieIcon();
                     }
                     
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         etat = EtatPrincipal.ACCUEIL;
+                        // Réafficher la même page principale
+                        vue.setVisible(true);
+                        vue.updateMessagerieIcon();
                     }
                 });
             });
@@ -347,6 +356,13 @@ public class ControleurPrincipale implements ActionListener {
             afficherErreur("Erreur lors de l'ouverture de la messagerie", e);
             etat = EtatPrincipal.ACCUEIL;
         }
+    }
+
+    private void ouvrirPagePrincipale() {
+        SwingUtilities.invokeLater(() -> {
+            Page_Principale nouvellePage = new Page_Principale(emailUtilisateur);
+            nouvellePage.setVisible(true);
+        });
     }
     
     private void afficherErreur(String message, Exception e) {
@@ -367,3 +383,4 @@ public class ControleurPrincipale implements ActionListener {
         return emailUtilisateur;
     }
 }
+
