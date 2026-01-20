@@ -1560,7 +1560,6 @@ public class Page_Utilisateur extends JFrame {
     	new Page_Utilisateur(emailUtilisateur, true).setVisible(true);
     	dispose();
     }
-<<<<<<< HEAD
     
     // === GETTERS POUR LE CONTROLEUR ===
     
@@ -1584,6 +1583,4 @@ public class Page_Utilisateur extends JFrame {
     }
     
 }
-=======
-}
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
+

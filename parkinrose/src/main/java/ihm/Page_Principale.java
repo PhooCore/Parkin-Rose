@@ -29,6 +29,7 @@ public class Page_Principale extends JFrame {
     private Usager usager;
     public JButton btnMessagerie;
     public JButton btnStationnement;
+    public JButton btnFavoris;
     public JButton btnUtilisateur;
     public JButton btnPreparerStationnement;
     public JButton btnSearch;
@@ -270,6 +271,24 @@ public class Page_Principale extends JFrame {
         btnStationnement.add(lblIconePark, BorderLayout.CENTER);
         btnStationnement.add(lblTextPark, BorderLayout.SOUTH);
         
+        //Bouton favoris
+        btnFavoris = new JButton();
+        btnFavoris = new JButton();
+        btnFavoris.setLayout(new BorderLayout());
+        btnFavoris.setBackground(new Color(240, 240, 240));
+        btnFavoris.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        btnFavoris.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnFavoris.setPreferredSize(new Dimension(140, 70));
+        btnFavoris.addActionListener(e -> ouvrirPageFavoris());
+        //icone coeur favoris
+        JLabel lblIconeFavoris = chargerIconeLabel("/images/coeurRempli.png", 40, 40, "P");
+        JLabel lblTexteFavoris = new JLabel("Favoris", SwingConstants.CENTER);
+        lblIconeFavoris.setFont(new Font("Arial", Font.PLAIN, 12));
+        lblTexteFavoris.setForeground(Color.DARK_GRAY);
+        
+        btnFavoris.add(lblIconeFavoris, BorderLayout.CENTER);
+        btnFavoris.add(lblTexteFavoris, BorderLayout.SOUTH);
+        
         // Bouton Mon Compte
         btnUtilisateur = new JButton();
         btnUtilisateur.setLayout(new BorderLayout());
@@ -288,6 +307,7 @@ public class Page_Principale extends JFrame {
         btnUtilisateur.add(lblTextUser, BorderLayout.SOUTH);
         panelDroit.add(btnMessagerie);
         panelDroit.add(btnStationnement);
+        panelDroit.add(btnFavoris);
         panelDroit.add(btnUtilisateur);
         
         // ========== ASSEMBLAGE FINAL ==========
@@ -532,6 +552,14 @@ public class Page_Principale extends JFrame {
             updateMessagerieIcon();
         }
     }
+    
+    public void ouvrirPageFavoris() {
+        Page_Favoris pageFavoris =
+            new Page_Favoris(emailUtilisateur, usager.getIdUsager());
+
+        pageFavoris.setVisible(true);
+    }
+
     public static void main(String[] args) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {

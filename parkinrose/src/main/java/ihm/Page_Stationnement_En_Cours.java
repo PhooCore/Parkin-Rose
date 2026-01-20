@@ -31,18 +31,17 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
     private JButton btnArreter;
     private JButton btnRetour;
     private JButton btnProlonger;
-<<<<<<< HEAD
+
 
     /**
      * constructeur de la page de stationnement en cours
      */
-=======
+
     private Timer timerAlerte;
     private boolean alerteDejaAffichee = false;
     private boolean fenetreFermee = false;
     private NotificationManager notificationManager;
     
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
     public Page_Stationnement_En_Cours(String email) {
         this.emailUtilisateur = email;
         
@@ -112,11 +111,10 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
         btnRetour = new JButton("Retour");
         panelBoutons.add(btnRetour);
         
-<<<<<<< HEAD
+
         // Bouton prolonger (visible uniquement pour voirie)
-=======
+
         // Bouton prolonger
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
         btnProlonger = new JButton("Prolonger le stationnement");
         btnProlonger.setBackground(new Color(0, 153, 255));
         btnProlonger.setForeground(Color.WHITE);
@@ -142,11 +140,9 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
         afficherInformationsStationnement();
     }
     
-<<<<<<< HEAD
     /**
      * charge le stationnement actif de l'utilisateur depuis la base de données
      */
-=======
     private void ouvrirConfigurationNotifications() {
         Page_Configuration_Notifications configPage = new Page_Configuration_Notifications();
         configPage.setVisible(true);
@@ -174,7 +170,6 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
     }
     
     // Méthodes appelées par le contrôleur
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
     public void chargerStationnementActif() {
         Usager usager = UsagerDAO.getUsagerByEmail(emailUtilisateur);
         if (usager != null) {
@@ -298,11 +293,10 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
         panelInfo.add(ligne);
     }
     
-<<<<<<< HEAD
     /**
      * gère l'arrêt du stationnement en cours après confirmation de l'utilisateur
      */
-=======
+
     private JPanel creerLigneInfoAlerte(String libelle, String valeur, boolean alerte) {
         JPanel ligne = new JPanel(new BorderLayout());
         ligne.setBackground(Color.WHITE);
@@ -409,7 +403,6 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
     }
     
     // Méthode de gestion d'arrêt
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
     private void gérerArrêtStationnement() {
         if (stationnementActif == null) {
             JOptionPane.showMessageDialog(this,
@@ -514,10 +507,7 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
             
             String nomParking = getLibelleParkingFromId(stationnementActif.getIdTarification());
             
-<<<<<<< HEAD
             // Calculer le coût
-=======
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
             double cout = 0;
             try {
                 cout = TarifParkingDAO.calculerCoutParking(
@@ -534,10 +524,7 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
             }
             
             if (Math.abs(cout) < 0.01) {
-<<<<<<< HEAD
                 // Terminer le stationnement directement (parking gratuit)
-=======
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
                 terminerStationnementParkingGratuit(heureDepart, cout, nomParking);
             } else {
                 Page_Paiement pagePaiement = new Page_Paiement(
@@ -636,12 +623,9 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
         dispose();
     }
     
-<<<<<<< HEAD
     /**
      * rafraîchit l'affichage en rechargeant les données du stationnement
      */
-=======
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
     public void rafraichirAffichage() {
         chargerStationnementActif();
         afficherInformationsStationnement();
@@ -652,26 +636,20 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
         }
     }
     
-<<<<<<< HEAD
     /**
      * ferme la fenêtre et libère les ressources
      */
-=======
     // Implémentation de NotificationListener
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
     @Override
     public void onNotification(String titre, String message, NotificationType type) {
         // Afficher la notification via le gestionnaire (version simple)
         notificationManager.afficherPopupNotificationSimple(titre, message, type);
     }
     
-<<<<<<< HEAD
     /**
      * gère la prolongation d'un stationnement en voirie avec sélection de durée
      */
-=======
     // PROLONGATION DU STATIONNEMENT
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
     private void gérerProlongationStationnement() {
         if (stationnementActif == null || !stationnementActif.estVoirie()) {
             JOptionPane.showMessageDialog(this,
@@ -907,24 +885,6 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
 
     }
 
-<<<<<<< HEAD
-    // === GETTERS POUR LE CONTROLEUR ===
-    
-    public String getEmailUtilisateur() {
-        return emailUtilisateur;
-    }
-    public Stationnement getStationnementActif() {
-        return stationnementActif;
-    }
-    public JButton getBtnRetour() {
-        return btnRetour;
-    }
-    public JButton getBtnArreter() {
-        return btnArreter;
-    }
-    public JButton getBtnProlonger() {
-    	return btnProlonger;
-=======
     private void demarrerTimerAlerte() {
         timerAlerte = new Timer(60000, e -> {
             if (!fenetreFermee && isDisplayable()) {
@@ -985,6 +945,5 @@ public class Page_Stationnement_En_Cours extends JFrame implements NotificationL
             notificationManager.removeNotificationListener(this);
         }
         super.dispose();
->>>>>>> cf0da7a09a838cc17d2e2ff12e47c619b77daf41
     }
 }

@@ -1,13 +1,17 @@
 package ihm;
 
 import javax.swing.*;
+
 import java.awt.*;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
 import modele.Parking;
+import modele.dao.FavoriDAO;
 import modele.dao.ParkingDAO;
 import modele.dao.TarifParkingDAO;
+import modele.dao.UsagerDAO;
 import controleur.ControleurResultatsRecherche;
 
 public class Page_Resultats_Recherche extends JFrame {
@@ -45,6 +49,7 @@ public class Page_Resultats_Recherche extends JFrame {
     private final String termeRecherche;
     private final List<Parking> parkings;
     private List<Parking> parkingsFiltres;
+    private int idUsager;
     
     // Composants d'interface
     private JPanel panelResultats;
@@ -57,9 +62,26 @@ public class Page_Resultats_Recherche extends JFrame {
     // Contrôleur
     private ControleurResultatsRecherche controleur;
     
+    // Icones coeur
+    private final ImageIcon COEUR_VIDE =
+    	    chargerIconeRedimensionnee("/images/coeurVide.png", 24, 24);
+
+    	private final ImageIcon COEUR_REMPLI =
+    	    chargerIconeRedimensionnee("/images/coeurRempli.png", 24, 24);
+
     public Page_Resultats_Recherche(String email, String termeRecherche) {
         this.emailUtilisateur = email;
         this.termeRecherche = termeRecherche;
+        
+        try {
+            this.idUsager = UsagerDAO.getInstance()
+                .findById(emailUtilisateur)
+                .getIdUsager();
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.idUsager = -1;
+        }
+        
         this.parkings = chargerParkings();
         this.setParkingsFiltres(new ArrayList<>(parkings));
         
@@ -418,9 +440,9 @@ public class Page_Resultats_Recherche extends JFrame {
         carte.setMaximumSize(DIMENSION_CARTE);
         carte.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
+        carte.add(creerPanelCoeur(parking), BorderLayout.WEST);
         carte.add(creerPanelInformations(parking), BorderLayout.CENTER);
         carte.add(creerPanelBouton(index), BorderLayout.EAST);
-        
         return carte;
     }
     
@@ -575,6 +597,83 @@ public class Page_Resultats_Recherche extends JFrame {
         btnTousParkings.setAlignmentX(Component.CENTER_ALIGNMENT);
         return btnTousParkings;
     }
+    
+    private ImageIcon chargerIconeRedimensionnee(String chemin, int largeur, int hauteur) {
+        ImageIcon icon = new ImageIcon(getClass().getResource(chemin));
+        Image image = icon.getImage().getScaledInstance(largeur, hauteur, Image.SCALE_SMOOTH);
+        return new ImageIcon(image);
+    }
+
+    
+    private JPanel creerPanelCoeur(Parking parking) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(COULEUR_FOND);
+        panel.setPreferredSize(new Dimension(50, 100));
+
+        JButton coeur = creerBoutonCoeur(parking);
+        coeur.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        panel.add(coeur);
+        panel.add(Box.createVerticalGlue());
+
+        return panel;
+    }
+
+
+
+    private JButton creerBoutonCoeur(Parking parking) {
+        JButton btnCoeur = new JButton();
+
+        boolean estFavori = false;
+        try {
+            estFavori = FavoriDAO.getInstance()
+                    .estFavori(idUsager, parking.getIdParking());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        btnCoeur.setIcon(estFavori ? COEUR_REMPLI : COEUR_VIDE);
+
+        btnCoeur.setBorderPainted(false);
+        btnCoeur.setContentAreaFilled(false);
+        btnCoeur.setFocusPainted(false);
+        btnCoeur.setOpaque(false);
+        btnCoeur.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCoeur.setPreferredSize(new Dimension(32, 32));
+
+        btnCoeur.addActionListener(e -> {
+            try {
+                if (FavoriDAO.getInstance()
+                        .estFavori(idUsager, parking.getIdParking())) {
+
+                    FavoriDAO.getInstance()
+                            .supprimerFavori(idUsager, parking.getIdParking());
+                    btnCoeur.setIcon(COEUR_VIDE);
+
+                } else {
+
+                    FavoriDAO.getInstance()
+                            .ajouterFavori(idUsager, parking.getIdParking());
+                    btnCoeur.setIcon(COEUR_REMPLI);
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Erreur lors de la gestion des favoris",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+
+        return btnCoeur;
+    }
+
+
+
+    
     
     /**
      * Reconfigure les listeners après mise à jour de l'interface
