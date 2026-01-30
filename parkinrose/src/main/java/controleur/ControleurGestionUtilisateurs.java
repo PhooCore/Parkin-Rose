@@ -17,36 +17,62 @@ import java.awt.event.*;
 import java.sql.*;
 import java.util.List;
 
+/**
+ * Contrôleur gérant l'interface d'administration des utilisateurs.
+ * Permet aux administrateurs de créer, modifier et gérer les utilisateurs,
+ * leurs véhicules, leurs abonnements et consulter leur historique de stationnements.
+ * Gère également l'attribution et le retrait des droits d'administration.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue PageGestionUtilisateurs
+ * et les modèles (Usager, VehiculeUsager, Abonnement, Stationnement).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurGestionUtilisateurs implements ActionListener {
     
-    // États du contrôleur
+    /**
+     * Énumération des différents états possibles du contrôleur de gestion des utilisateurs.
+     * Permet de suivre le cycle de vie des opérations d'administration.
+     */
     private enum Etat {
+        /** État initial au démarrage du contrôleur */
         INITIAL,
+        /** Chargement des données depuis la base de données */
         CHARGEMENT,
+        /** Affichage de la liste des utilisateurs */
         AFFICHAGE,
+        /** Recherche d'utilisateurs en cours */
         RECHERCHE,
+        /** Création d'un nouvel utilisateur */
         CREATION,
+        /** Modification d'un utilisateur existant */
         MODIFICATION,
+        /** Gestion des véhicules d'un utilisateur */
         GESTION_VEHICULES,
+        /** Gestion des abonnements d'un utilisateur */
         GESTION_ABONNEMENTS,
+        /** Consultation de l'historique des stationnements */
         CONSULTATION_STATIONNEMENTS,
+        /** Changement du statut administrateur d'un utilisateur */
         CHANGEMENT_ADMIN,
+        /** Retour à la page d'administration */
         RETOUR,
+        /** Une erreur s'est produite */
         ERREUR
     }
     
-    // Références
     private PageGestionUtilisateurs vue;
     private Etat etat;
-    
-    // DAOs
     private UsagerDAO usagerDAO;
     private VehiculeUsagerDAO vehiculeUsagerDAO;
     private AbonnementDAO abonnementDAO;
-    
-    // Données
     private Usager usagerSelectionne;
     
+    /**
+     * Constructeur du contrôleur de gestion des utilisateurs.
+     * Initialise les DAOs et configure le contrôleur avec la vue associée.
+     * 
+     * @param vue la page d'interface graphique de gestion des utilisateurs
+     */
     public ControleurGestionUtilisateurs(PageGestionUtilisateurs vue) {
         this.vue = vue;
         this.etat = Etat.INITIAL;
@@ -57,6 +83,11 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         initialiserControleur();
     }
     
+    /**
+     * Initialise le contrôleur en configurant les écouteurs et en chargeant
+     * la liste initiale des utilisateurs.
+     * En cas d'erreur, gère l'erreur d'initialisation.
+     */
     private void initialiserControleur() {
         try {
             configurerListeners();
@@ -67,8 +98,11 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Configure tous les écouteurs d'événements pour les composants interactifs de la vue.
+     * Connecte les boutons d'action et ajoute la recherche à la frappe avec la touche Entrée.
+     */
     private void configurerListeners() {
-        // Boutons
         vue.getBtnRechercher().addActionListener(this);
         vue.getBtnActualiser().addActionListener(this);
         vue.getBtnNouveau().addActionListener(this);
@@ -79,7 +113,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         vue.getBtnVoirStationnements().addActionListener(this);
         vue.getBtnRetour().addActionListener(this);
         
-        // Recherche à la frappe
         vue.getTxtRecherche().addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -92,6 +125,13 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         });
     }
     
+    /**
+     * Gère les événements d'action des composants de la vue.
+     * Route les actions vers les méthodes appropriées en fonction de l'état actuel
+     * et de la source de l'événement.
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
@@ -136,15 +176,17 @@ public class ControleurGestionUtilisateurs implements ActionListener {
             case GESTION_VEHICULES:
             case GESTION_ABONNEMENTS:
             case CONSULTATION_STATIONNEMENTS:
-                // Les traitements sont gérés dans les méthodes spécifiques
                 break;
                 
             case ERREUR:
-                // Ne rien faire en état d'erreur
                 break;
         }
     }
     
+    /**
+     * Charge la liste complète des utilisateurs depuis la base de données
+     * via la méthode de la vue.
+     */
     private void chargerUtilisateurs() {
         try {
             vue.chargerUtilisateurs();
@@ -153,10 +195,18 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Lance une recherche d'utilisateurs selon les critères saisis dans le champ de recherche.
+     */
     private void rechercherUtilisateurs() {
         vue.rechercherUtilisateurs();
     }
     
+    /**
+     * Affiche un formulaire modal pour créer un nouvel utilisateur.
+     * Le formulaire comprend les champs : nom, prénom, email, mot de passe et statut admin.
+     * Valide les données avant la création effective.
+     */
     private void afficherFormulaireNouvelUtilisateur() {
         JDialog dialog = new JDialog(vue, "Nouvel utilisateur", true);
         dialog.setSize(400, 400);
@@ -167,7 +217,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         gbc.insets = new java.awt.Insets(5, 5, 5, 5);
         gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
         
-        // Champs
         JLabel lblNom = new JLabel("Nom:*");
         JTextField txtNom = new JTextField(20);
         
@@ -182,7 +231,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         
         JCheckBox chkAdmin = new JCheckBox("Administrateur");
         
-        // Layout
         gbc.gridx = 0; gbc.gridy = 0;
         dialog.add(lblNom, gbc);
         gbc.gridx = 1;
@@ -206,7 +254,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         dialog.add(chkAdmin, gbc);
         
-        // Boutons
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
         JButton btnAnnuler = new JButton("Annuler");
         btnAnnuler.addActionListener(e -> dialog.dispose());
@@ -242,6 +289,16 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         etat = Etat.AFFICHAGE;
     }
     
+    /**
+     * Valide le formulaire de création d'un nouvel utilisateur.
+     * Vérifie que tous les champs obligatoires sont remplis et que l'email est valide.
+     * 
+     * @param txtNom le champ du nom
+     * @param txtPrenom le champ du prénom
+     * @param txtEmail le champ de l'email
+     * @param txtMdp le champ du mot de passe
+     * @return true si le formulaire est valide, false sinon avec affichage d'erreur
+     */
     private boolean validerFormulaireNouvelUtilisateur(JTextField txtNom, JTextField txtPrenom, 
                                                       JTextField txtEmail, JPasswordField txtMdp) {
         String nom = txtNom.getText().trim();
@@ -262,6 +319,17 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         return true;
     }
     
+    /**
+     * Crée un nouvel utilisateur dans la base de données avec les informations fournies.
+     * Vérifie que l'email n'existe pas déjà avant la création.
+     * 
+     * @param nom le nom de l'utilisateur
+     * @param prenom le prénom de l'utilisateur
+     * @param email l'email de l'utilisateur
+     * @param mdp le mot de passe de l'utilisateur
+     * @param estAdmin true si l'utilisateur doit avoir les droits d'administration
+     * @param dialog le dialogue à fermer en cas de succès
+     */
     private void creerNouvelUtilisateur(String nom, String prenom, String email, 
                                        String mdp, boolean estAdmin, JDialog dialog) {
         try {
@@ -286,6 +354,11 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Affiche un formulaire modal pour modifier un utilisateur existant.
+     * Les champs sont pré-remplis avec les données actuelles de l'utilisateur sélectionné.
+     * Le mot de passe peut être laissé vide pour ne pas le modifier.
+     */
     private void modifierUtilisateur() {
         usagerSelectionne = vue.getUsagerSelectionne();
         if (usagerSelectionne == null) {
@@ -303,7 +376,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         gbc.insets = new java.awt.Insets(5, 5, 5, 5);
         gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
         
-        // Champs pré-remplis
         JLabel lblNom = new JLabel("Nom:*");
         JTextField txtNom = new JTextField(usagerSelectionne.getNomUsager(), 20);
         
@@ -319,7 +391,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         
         JCheckBox chkAdmin = new JCheckBox("Administrateur", usagerSelectionne.isAdmin());
         
-        // Layout
         gbc.gridx = 0; gbc.gridy = 0;
         dialog.add(lblNom, gbc);
         gbc.gridx = 1;
@@ -343,7 +414,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         dialog.add(chkAdmin, gbc);
         
-        // Boutons
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
         JButton btnAnnuler = new JButton("Annuler");
         btnAnnuler.addActionListener(e -> dialog.dispose());
@@ -379,6 +449,15 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         etat = Etat.AFFICHAGE;
     }
     
+    /**
+     * Valide le formulaire de modification d'un utilisateur.
+     * Vérifie que les champs obligatoires sont remplis et que l'email est valide.
+     * 
+     * @param txtNom le champ du nom
+     * @param txtPrenom le champ du prénom
+     * @param txtEmail le champ de l'email
+     * @return true si le formulaire est valide, false sinon avec affichage d'erreur
+     */
     private boolean validerFormulaireModification(JTextField txtNom, JTextField txtPrenom, 
                                                  JTextField txtEmail) {
         String nom = txtNom.getText().trim();
@@ -398,6 +477,18 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         return true;
     }
     
+    /**
+     * Met à jour les informations d'un utilisateur existant dans la base de données.
+     * Vérifie que le nouvel email n'est pas déjà utilisé par un autre utilisateur.
+     * Le mot de passe n'est modifié que s'il n'est pas vide.
+     * 
+     * @param nom le nouveau nom
+     * @param prenom le nouveau prénom
+     * @param email le nouvel email
+     * @param mdp le nouveau mot de passe (vide pour ne pas modifier)
+     * @param estAdmin le nouveau statut administrateur
+     * @param dialog le dialogue à fermer en cas de succès
+     */
     private void modifierUtilisateurExistant(String nom, String prenom, String email, 
                                             String mdp, boolean estAdmin, JDialog dialog) {
         try {
@@ -424,6 +515,10 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Change le statut administrateur d'un utilisateur (attribuer ou retirer les droits).
+     * Demande confirmation avant de modifier le statut dans la base de données.
+     */
     private void changerStatutAdmin() {
         usagerSelectionne = vue.getUsagerSelectionne();
         if (usagerSelectionne == null) {
@@ -454,6 +549,14 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         etat = Etat.AFFICHAGE;
     }
     
+    /**
+     * Met à jour le statut administrateur d'un utilisateur dans la base de données.
+     * 
+     * @param idUsager l'identifiant de l'utilisateur
+     * @param estAdmin le nouveau statut (true pour admin, false sinon)
+     * @return true si la mise à jour a réussi, false sinon
+     * @throws SQLException si une erreur survient lors de l'accès à la base
+     */
     private boolean mettreAJourStatutAdmin(int idUsager, boolean estAdmin) throws SQLException {
         String sql = "UPDATE Usager SET is_admin = ? WHERE id_usager = ?";
         
@@ -468,6 +571,10 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Affiche une fenêtre de gestion des véhicules de l'utilisateur sélectionné.
+     * Permet d'ajouter, supprimer des véhicules et de définir le véhicule principal.
+     */
     private void gererVehicules() {
         usagerSelectionne = vue.getUsagerSelectionne();
         if (usagerSelectionne == null) {
@@ -519,6 +626,12 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         etat = Etat.AFFICHAGE;
     }
     
+    /**
+     * Charge la liste des véhicules d'un utilisateur dans le modèle de table.
+     * 
+     * @param idUsager l'identifiant de l'utilisateur
+     * @param model le modèle de table à remplir
+     */
     private void chargerVehicules(int idUsager, DefaultTableModel model) {
         try {
             model.setRowCount(0);
@@ -540,6 +653,13 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Affiche un dialogue pour ajouter un nouveau véhicule à un utilisateur.
+     * Valide le format de la plaque et vérifie qu'elle n'existe pas déjà.
+     * 
+     * @param parent le dialogue parent
+     * @param model le modèle de table à mettre à jour après ajout
+     */
     private void ajouterVehiculeDialog(JDialog parent, DefaultTableModel model) {
         JDialog dialog = new JDialog(parent, "Ajouter un véhicule", true);
         dialog.setSize(400, 350);
@@ -587,7 +707,6 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         dialog.add(chkPrincipal, gbc);
         
-        // Boutons
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
         JButton btnAnnuler = new JButton("Annuler");
         btnAnnuler.addActionListener(e -> dialog.dispose());
@@ -645,6 +764,13 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         dialog.setVisible(true);
     }
     
+    /**
+     * Supprime le véhicule sélectionné dans la table après confirmation.
+     * Avertit l'utilisateur si le véhicule à supprimer est le véhicule principal.
+     * 
+     * @param table la table contenant les véhicules
+     * @param model le modèle de table à mettre à jour
+     */
     private void supprimerVehicule(JTable table, DefaultTableModel model) {
         int selectedRow = table.getSelectedRow();
         if (selectedRow >= 0) {
@@ -681,6 +807,13 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Définit le véhicule sélectionné comme véhicule principal de l'utilisateur.
+     * Met à jour tous les autres véhicules pour qu'ils ne soient plus principaux.
+     * 
+     * @param table la table contenant les véhicules
+     * @param model le modèle de table à mettre à jour
+     */
     private void definirPrincipalVehicule(JTable table, DefaultTableModel model) {
         int selectedRow = table.getSelectedRow();
         if (selectedRow >= 0) {
@@ -709,6 +842,10 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Affiche une fenêtre de gestion des abonnements de l'utilisateur sélectionné.
+     * Permet d'attribuer un nouvel abonnement ou de supprimer l'abonnement actuel.
+     */
     private void gererAbonnements() {
         usagerSelectionne = vue.getUsagerSelectionne();
         if (usagerSelectionne == null) {
@@ -812,6 +949,10 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Affiche une fenêtre montrant l'historique complet des stationnements
+     * de l'utilisateur sélectionné.
+     */
     private void voirStationnements() {
         usagerSelectionne = vue.getUsagerSelectionne();
         if (usagerSelectionne == null) {
@@ -865,6 +1006,12 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         etat = Etat.AFFICHAGE;
     }
     
+    /**
+     * Charge l'historique des stationnements d'un utilisateur dans le modèle de table.
+     * 
+     * @param idUsager l'identifiant de l'utilisateur
+     * @param model le modèle de table à remplir
+     */
     private void chargerStationnements(int idUsager, DefaultTableModel model) {
         try {
             StationnementDAO stationnementDAO = StationnementDAO.getInstance();
@@ -893,6 +1040,9 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
+    /**
+     * Retourne à la page d'administration principale et ferme la page actuelle.
+     */
     private void retourAdministration() {
         String emailAdmin = vue.getEmailAdmin();
         if (emailAdmin != null) {
@@ -903,13 +1053,25 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         }
     }
     
-    // Méthodes utilitaires
-    
+    /**
+     * Valide le format d'une plaque d'immatriculation française.
+     * Accepte les formats AA-123-AA et AA123AA.
+     * 
+     * @param plaque la plaque à valider
+     * @return true si le format est valide, false sinon
+     */
     private boolean validerFormatPlaque(String plaque) {
         return plaque.matches("[A-Z]{2}-\\d{3}-[A-Z]{2}") || 
                plaque.matches("[A-Z]{2}\\d{3}[A-Z]{2}");
     }
     
+    /**
+     * Normalise le format d'une plaque d'immatriculation en ajoutant les tirets
+     * si nécessaire (AA123AA → AA-123-AA).
+     * 
+     * @param plaque la plaque à normaliser
+     * @return la plaque normalisée au format AA-123-AA
+     */
     private String normaliserPlaque(String plaque) {
         if (plaque.matches("[A-Z]{2}\\d{3}[A-Z]{2}")) {
             return plaque.substring(0, 2) + "-" + 
@@ -919,12 +1081,25 @@ public class ControleurGestionUtilisateurs implements ActionListener {
         return plaque;
     }
     
+    /**
+     * Gère une erreur survenue pendant l'utilisation du contrôleur.
+     * Affiche un message d'erreur et passe à l'état ERREUR.
+     * 
+     * @param titre le titre du message d'erreur
+     * @param message la description détaillée de l'erreur
+     */
     private void gererErreur(String titre, String message) {
         System.err.println(titre + ": " + message);
         vue.afficherErreur(titre);
         etat = Etat.ERREUR;
     }
     
+    /**
+     * Gère une erreur critique survenue lors de l'initialisation.
+     * Affiche un message d'erreur et ferme l'application.
+     * 
+     * @param message la description de l'erreur d'initialisation
+     */
     private void gererErreurInitialisation(String message) {
         System.err.println("Erreur initialisation: " + message);
         JOptionPane.showMessageDialog(vue,

@@ -11,13 +11,33 @@ import modele.dao.VehiculeUsagerDAO;
 import java.util.List;
 import java.awt.*;
 
+/**
+ * Contrôleur gérant l'interface de gestion des véhicules d'un utilisateur.
+ * Permet d'ajouter, supprimer des véhicules et de définir le véhicule principal
+ * qui sera utilisé par défaut pour les stationnements.
+ * Valide les plaques d'immatriculation au format français (AA-123-AA ou AA123AA)
+ * et évite les doublons.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Gestion_Vehicules
+ * et les modèles (Usager, VehiculeUsager, VehiculeUsagerDAO).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurGestionVehicules implements ActionListener {
     
+    /**
+     * Énumération des différents états possibles du contrôleur de gestion des véhicules.
+     * Permet de suivre le cycle de vie des opérations sur les véhicules.
+     */
     private enum EtatGestion {
+        /** État initial au démarrage du contrôleur */
         INITIAL,
+        /** Affichage de la liste des véhicules */
         AFFICHAGE,
+        /** Ajout d'un nouveau véhicule en cours */
         AJOUT,
+        /** Modification d'un véhicule existant en cours */
         MODIFICATION,
+        /** Suppression d'un véhicule en cours */
         SUPPRESSION
     }
     
@@ -26,6 +46,12 @@ public class ControleurGestionVehicules implements ActionListener {
     private Usager usager;
     private DefaultListModel<VehiculeUsager> listModel;
     
+    /**
+     * Constructeur du contrôleur de gestion des véhicules.
+     * Initialise le contrôleur avec la vue associée, charge l'utilisateur et ses véhicules.
+     * 
+     * @param vue la page d'interface graphique de gestion des véhicules
+     */
     public ControleurGestionVehicules(Page_Gestion_Vehicules vue) {
         this.vue = vue;
         this.usager = UsagerDAO.getUsagerByEmail(vue.emailUtilisateur);
@@ -36,13 +62,23 @@ public class ControleurGestionVehicules implements ActionListener {
         etat = EtatGestion.AFFICHAGE;
     }
     
+    /**
+     * Configure les écouteurs d'événements pour les boutons de la vue.
+     * Connecte les boutons d'ajout, suppression et définition du véhicule principal.
+     */
     private void configurerListeners() {
-        // Ajouter ActionListener aux boutons
         vue.btnAjouter.addActionListener(this);
         vue.btnSupprimer.addActionListener(this);
         vue.btnDefinirPrincipal.addActionListener(this);
     }
     
+    /**
+     * Gère les événements d'action des boutons de la vue.
+     * Route les actions vers les méthodes appropriées en fonction de l'état actuel
+     * et du bouton cliqué.
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         String action = getActionBouton((JButton) e.getSource());
@@ -66,6 +102,10 @@ public class ControleurGestionVehicules implements ActionListener {
         }
     }
     
+    /**
+     * Charge la liste complète des véhicules de l'utilisateur depuis la base de données
+     * et met à jour l'affichage dans la liste.
+     */
     private void chargerVehicules() {
         listModel.clear();
         if (usager != null) {
@@ -76,8 +116,13 @@ public class ControleurGestionVehicules implements ActionListener {
         }
     }
     
+    /**
+     * Affiche un dialogue modal pour ajouter un nouveau véhicule.
+     * Le formulaire comprend : plaque d'immatriculation, type, marque (optionnel),
+     * modèle (optionnel) et la possibilité de le définir comme véhicule principal.
+     * Valide le format de la plaque et vérifie l'absence de doublon avant l'ajout.
+     */
     private void ajouterVehicule() {
-        // Ouvrir une boîte de dialogue pour ajouter un véhicule
         JDialog dialog = new JDialog(vue, "Ajouter un véhicule", true);
         dialog.setLayout(new GridLayout(5, 2, 5, 5));
         
@@ -102,7 +147,6 @@ public class ControleurGestionVehicules implements ActionListener {
         btnValider.addActionListener(e -> {
             String plaque = txtPlaque.getText().trim().toUpperCase();
             
-            // Validation du format de plaque (compatible avec GarerVoirie)
             if (!validerFormatPlaque(plaque)) {
                 JOptionPane.showMessageDialog(dialog, 
                     "Format de plaque invalide. Utilisez AA-123-AA ou AA123AA", 
@@ -111,10 +155,8 @@ public class ControleurGestionVehicules implements ActionListener {
             }
             
             if (usager != null) {
-                // Normaliser le format de plaque
                 String plaqueNormalisee = normaliserPlaque(plaque);
                 
-                // Vérifier si la plaque existe déjà pour cet utilisateur
                 if (plaqueExistePourUsager(plaqueNormalisee)) {
                     JOptionPane.showMessageDialog(dialog,
                         "Cette plaque d'immatriculation existe déjà pour votre compte.",
@@ -132,7 +174,6 @@ public class ControleurGestionVehicules implements ActionListener {
                 vehicule.setModele(txtModele.getText().trim());
                 vehicule.setEstPrincipal(chkPrincipal.isSelected());
                 
-                // Utiliser la méthode statique
                 if (VehiculeUsagerDAO.ajouterVehiculeStatic(vehicule)) {
                     chargerVehicules();
                     dialog.dispose();
@@ -164,13 +205,16 @@ public class ControleurGestionVehicules implements ActionListener {
         dialog.setVisible(true);
     }
     
+    /**
+     * Supprime le véhicule sélectionné dans la liste après confirmation.
+     * Avertit l'utilisateur de manière spécifique si le véhicule à supprimer
+     * est le véhicule principal (aucun véhicule principal ne sera défini après).
+     */
     private void supprimerVehicule() {
-        // Utiliser le modèle directement (au lieu de vue.listVehicules.getSelectedValue())
         int selectedIndex = vue.listVehicules.getSelectedIndex();
         if (selectedIndex >= 0) {
             VehiculeUsager vehicule = listModel.getElementAt(selectedIndex);
             
-            // Vérifier si c'est le véhicule principal
             if (vehicule.isEstPrincipal()) {
                 int choix = JOptionPane.showConfirmDialog(vue, 
                     "Vous allez supprimer votre véhicule principal.\n" +
@@ -213,8 +257,12 @@ public class ControleurGestionVehicules implements ActionListener {
         }
     }
     
+    /**
+     * Définit le véhicule sélectionné comme véhicule principal de l'utilisateur
+     * après confirmation. Le véhicule principal sera utilisé par défaut pour
+     * les stationnements. Tous les autres véhicules perdent ce statut.
+     */
     private void definirPrincipal() {
-        // Utiliser le modèle directement
         int selectedIndex = vue.listVehicules.getSelectedIndex();
         if (selectedIndex >= 0) {
             VehiculeUsager vehicule = listModel.getElementAt(selectedIndex);
@@ -234,7 +282,6 @@ public class ControleurGestionVehicules implements ActionListener {
                 JOptionPane.YES_NO_OPTION);
             
             if (confirmation == JOptionPane.YES_OPTION && usager != null) {
-                // Utiliser la méthode statique
                 if (VehiculeUsagerDAO.definirVehiculePrincipalStatic(
                     vehicule.getIdVehiculeUsager(), usager.getIdUsager())) {
                     chargerVehicules();
@@ -257,14 +304,27 @@ public class ControleurGestionVehicules implements ActionListener {
         }
     }
     
+    /**
+     * Valide le format d'une plaque d'immatriculation française.
+     * Accepte les formats AA-123-AA et AA123AA.
+     * Compatible avec le format utilisé dans le contrôleur GarerVoirie.
+     * 
+     * @param plaque la plaque à valider
+     * @return true si le format est valide, false sinon
+     */
     private boolean validerFormatPlaque(String plaque) {
-        // Compatible avec le format du contrôleur GarerVoirie
         return plaque.matches("[A-Z]{2}-\\d{3}-[A-Z]{2}") || 
                plaque.matches("[A-Z]{2}\\d{3}[A-Z]{2}");
     }
     
+    /**
+     * Normalise le format d'une plaque d'immatriculation en ajoutant les tirets
+     * si nécessaire (AA123AA → AA-123-AA).
+     * 
+     * @param plaque la plaque à normaliser
+     * @return la plaque normalisée au format AA-123-AA
+     */
     private String normaliserPlaque(String plaque) {
-        // Normaliser le format de plaque (AA123AA → AA-123-AA)
         if (plaque.matches("[A-Z]{2}\\d{3}[A-Z]{2}")) {
             return plaque.substring(0, 2) + "-" + 
                    plaque.substring(2, 5) + "-" + 
@@ -273,10 +333,16 @@ public class ControleurGestionVehicules implements ActionListener {
         return plaque;
     }
     
+    /**
+     * Vérifie si une plaque d'immatriculation existe déjà pour l'utilisateur.
+     * Recherche dans la liste des véhicules déjà enregistrés.
+     * 
+     * @param plaque la plaque à vérifier
+     * @return true si la plaque existe déjà, false sinon
+     */
     private boolean plaqueExistePourUsager(String plaque) {
         if (usager == null) return false;
         
-        // Vérifier dans la liste des véhicules existants
         for (int i = 0; i < listModel.size(); i++) {
             VehiculeUsager v = listModel.getElementAt(i);
             if (v.getPlaqueImmatriculation().equalsIgnoreCase(plaque)) {
@@ -286,6 +352,12 @@ public class ControleurGestionVehicules implements ActionListener {
         return false;
     }
     
+    /**
+     * Détermine l'action associée à un bouton en analysant son texte.
+     * 
+     * @param b le bouton dont on veut identifier l'action
+     * @return une chaîne représentant l'action ("AJOUTER", "SUPPRIMER", "DEFINIR_PRINCIPAL" ou "INCONNU")
+     */
     private String getActionBouton(JButton b) {
         String texte = b.getText();
         if (texte != null) {

@@ -14,36 +14,61 @@ import java.awt.event.ActionListener;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * Contrôleur gérant l'interface d'administration des feedbacks utilisateurs.
+ * Permet aux administrateurs de consulter les messages des utilisateurs,
+ * y répondre, changer leur statut (nouveau, en cours, résolu) et consulter
+ * l'historique complet des échanges.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Gestion_Feedback
+ * et les modèles (Feedback, Usager, FeedbackDAO).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurGestionFeedback implements ActionListener, ListSelectionListener {
     
-    // États du contrôleur
+    /**
+     * Énumération des différents états possibles du contrôleur de gestion des feedbacks.
+     * Permet de suivre le cycle de vie du traitement des messages utilisateurs.
+     */
     private enum Etat {
+        /** État initial au démarrage du contrôleur */
         INITIAL,
+        /** Chargement des informations de l'administrateur connecté */
         CHARGEMENT_ADMIN,
+        /** Chargement de la liste des feedbacks depuis la base de données */
         CHARGEMENT_FEEDBACKS,
+        /** Un message a été sélectionné et ses détails sont affichés */
         MESSAGE_SELECTIONNE,
+        /** L'administrateur est en train de saisir une réponse */
         SAISIE_REPONSE,
+        /** Modification du statut d'un message en cours */
         MODIFICATION_STATUT,
+        /** Envoi d'une réponse à l'utilisateur en cours */
         ENVOI_REPONSE,
+        /** Actualisation de la liste des feedbacks en cours */
         ACTUALISATION,
-        RETOUR_ADMINISTRATION, // AJOUTÉ
+        /** Retour à la page d'administration principale */
+        RETOUR_ADMINISTRATION,
+        /** Une erreur s'est produite */
         ERREUR
     }
     
-    // Références
     private Page_Gestion_Feedback vue;
     private Etat etat;
-    
-    // Données
     private String emailAdmin;
     private Usager admin;
     private List<Feedback> feedbacksList;
     private Feedback feedbackSelectionne;
     
-    // Constantes
     private static final int LONGUEUR_MIN_REPONSE = 10;
     private static final int LONGUEUR_MAX_REPONSE = 2000;
     
+    /**
+     * Constructeur du contrôleur de gestion des feedbacks.
+     * Initialise le contrôleur avec la vue associée et vérifie les droits d'administration.
+     * 
+     * @param vue la page d'interface graphique de gestion des feedbacks
+     */
     public ControleurGestionFeedback(Page_Gestion_Feedback vue) {
         this.vue = vue;
         this.emailAdmin = vue.getEmailAdmin();
@@ -52,6 +77,11 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         initialiserControleur();
     }
     
+    /**
+     * Initialise le contrôleur en chargeant les informations de l'administrateur,
+     * configurant les écouteurs et chargeant la liste des feedbacks.
+     * En cas d'erreur, gère l'erreur d'initialisation.
+     */
     private void initialiserControleur() {
         try {
             chargerInformationsAdmin();
@@ -63,6 +93,12 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Charge les informations de l'administrateur connecté depuis la base de données
+     * et vérifie qu'il possède bien les droits d'administration.
+     * 
+     * @throws Exception si l'administrateur n'est pas trouvé ou n'a pas les droits requis
+     */
     private void chargerInformationsAdmin() throws Exception {
         this.admin = UsagerDAO.getUsagerByEmail(emailAdmin);
         
@@ -70,26 +106,33 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
             throw new Exception("Administrateur non trouvé");
         }
         
-        // Vérifier les droits d'admin
         if (!admin.isAdmin()) {
             throw new Exception("Accès administrateur requis");
         }
     }
     
+    /**
+     * Configure tous les écouteurs d'événements pour les composants interactifs de la vue.
+     * Connecte les boutons d'action, la table de feedbacks et le filtre.
+     */
     private void configurerListeners() {
-        // Boutons
         vue.getBtnRetour().addActionListener(this);
         vue.getBtnMarquerEnCours().addActionListener(this);
         vue.getBtnMarquerResolu().addActionListener(this);
         vue.getBtnRepondre().addActionListener(this);
         
-        // Table
         vue.getTableFeedbacks().getSelectionModel().addListSelectionListener(this);
         
-        // ComboBox filtre
         vue.getComboFiltre().addActionListener(this);
     }
     
+    /**
+     * Gère les événements d'action des composants de la vue.
+     * Route les actions vers les méthodes appropriées en fonction de l'état actuel
+     * et de la source de l'événement.
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
@@ -114,7 +157,6 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
             case MODIFICATION_STATUT:
             case ENVOI_REPONSE:
             case ACTUALISATION:
-                // En cours de traitement
                 break;
                 
             case ERREUR:
@@ -125,6 +167,12 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Gère les événements de sélection dans la table des feedbacks.
+     * Affiche les détails du message sélectionné si l'état le permet.
+     * 
+     * @param e l'événement de sélection
+     */
     @Override
     public void valueChanged(ListSelectionEvent e) {
         if (!e.getValueIsAdjusting() && etat != Etat.MODIFICATION_STATUT && 
@@ -133,6 +181,10 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Charge tous les feedbacks depuis la base de données et les affiche dans la table.
+     * Met à jour le titre avec le nombre de nouveaux messages non traités.
+     */
     private void chargerFeedbacks() {
         try {
             feedbacksList = FeedbackDAO.getAllFeedbacksWithInfo();
@@ -147,7 +199,6 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
                 return;
             }
             
-            // Remplir la table
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy HH:mm");
             
             for (Feedback feedback : feedbacksList) {
@@ -166,7 +217,6 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
                 });
             }
             
-            // Mettre à jour le titre avec le nombre de nouveaux messages
             mettreAJourTitre();
             
         } catch (Exception ex) {
@@ -174,6 +224,12 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Convertit le statut d'un feedback en texte lisible avec indication visuelle.
+     * 
+     * @param statut le code du statut (NOUVEAU, EN_COURS, RESOLU)
+     * @return le statut formaté pour affichage
+     */
     private String getStatutAvecIcone(String statut) {
         if (statut == null) return "INCONNU";
         
@@ -185,6 +241,9 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Met à jour le titre de la fenêtre avec le nombre de nouveaux feedbacks non traités.
+     */
     private void mettreAJourTitre() {
         int nouveaux = FeedbackDAO.getNombreNouveauxFeedbacks();
         if (nouveaux > 0) {
@@ -192,6 +251,11 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Filtre la liste des feedbacks selon le critère sélectionné dans le ComboBox.
+     * Les filtres disponibles sont : "Tous les messages", "Nouveaux", "En cours", "Résolus".
+     * Met à jour l'affichage de la table après filtrage.
+     */
     private void filtrerFeedbacks() {
         String filtre = (String) vue.getComboFiltre().getSelectedItem();
         
@@ -238,6 +302,11 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Affiche les détails complets du feedback sélectionné dans la table.
+     * Charge les informations de l'utilisateur, le message original et l'historique des réponses.
+     * Active les boutons d'action après sélection réussie.
+     */
     private void afficherDetailsSelection() {
         int selectedRow = vue.getTableFeedbacks().getSelectedRow();
         if (selectedRow == -1) {
@@ -247,7 +316,6 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
         
         try {
-            // Récupérer l'ID du feedback sélectionné
             Object idObj = vue.getTableModel().getValueAt(selectedRow, 0);
             if (!(idObj instanceof Integer)) {
                 afficherMessageErreur("Format d'ID invalide", "Erreur");
@@ -264,13 +332,8 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
             
             etat = Etat.MESSAGE_SELECTIONNE;
             
-            // Activer les boutons
             activerBoutons();
-            
-            // Mettre à jour les informations
             afficherInformationsFeedback();
-            
-            // Charger l'historique
             chargerHistorique();
             
         } catch (Exception ex) {
@@ -278,18 +341,27 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Active les boutons d'action sur le feedback sélectionné.
+     */
     private void activerBoutons() {
         vue.getBtnMarquerEnCours().setEnabled(true);
         vue.getBtnMarquerResolu().setEnabled(true);
         vue.getBtnRepondre().setEnabled(true);
     }
     
+    /**
+     * Désactive les boutons d'action lorsqu'aucun feedback n'est sélectionné.
+     */
     private void desactiverBoutons() {
         vue.getBtnMarquerEnCours().setEnabled(false);
         vue.getBtnMarquerResolu().setEnabled(false);
         vue.getBtnRepondre().setEnabled(false);
     }
     
+    /**
+     * Efface tous les détails affichés dans la zone de détails du feedback.
+     */
     private void effacerDetails() {
         vue.getLblUserInfo().setText("Utilisateur : ");
         vue.getLblDateInfo().setText("Date : ");
@@ -300,11 +372,14 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         vue.getTxtReponse().setText("");
     }
     
+    /**
+     * Affiche les informations principales du feedback sélectionné :
+     * utilisateur, date de création, statut, sujet et message.
+     */
     private void afficherInformationsFeedback() {
         if (feedbackSelectionne == null) return;
         
         try {
-            // Récupérer l'utilisateur
             Usager usager = UsagerDAO.getUsagerByEmail(feedbackSelectionne.getMailUsager());
             String nomUtilisateur;
             
@@ -315,18 +390,15 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
                 nomUtilisateur = "Utilisateur #" + feedbackSelectionne.getIdUsager();
             }
             
-            // Formater la date
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             String dateStr = feedbackSelectionne.getDateCreation() != null ?
                 feedbackSelectionne.getDateCreation().format(formatter) : "Date inconnue";
             
-            // Mettre à jour les labels
             vue.getLblUserInfo().setText("Utilisateur : " + nomUtilisateur);
             vue.getLblDateInfo().setText("Date : " + dateStr);
             vue.getLblStatut().setText("Statut : " + getStatutAvecIcone(feedbackSelectionne.getStatut()));
             vue.getLblSujetInfo().setText("Sujet : " + feedbackSelectionne.getSujet());
             
-            // Afficher le message
             vue.getTxtMessageDetail().setText(feedbackSelectionne.getMessage() != null ? 
                 feedbackSelectionne.getMessage() : "Message non disponible");
             
@@ -336,6 +408,11 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
     }
     
+    /**
+     * Charge et affiche l'historique complet des réponses administrateur
+     * pour le feedback sélectionné.
+     * Affiche un message si aucune réponse n'existe encore.
+     */
     private void chargerHistorique() {
         if (feedbackSelectionne == null) return;
         
@@ -372,9 +449,16 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         }
         
         vue.getTxtHistorique().setText(historique.toString());
-        vue.getTxtHistorique().setCaretPosition(0); // Remonter en haut
+        vue.getTxtHistorique().setCaretPosition(0);
     }
     
+    /**
+     * Change le statut d'un feedback après confirmation de l'administrateur.
+     * Les statuts possibles sont : "EN_COURS" ou "RESOLU".
+     * Met à jour l'affichage dans la table et les détails après modification.
+     * 
+     * @param nouveauStatut le nouveau statut à appliquer
+     */
     private void changerStatut(String nouveauStatut) {
         if (feedbackSelectionne == null) {
             afficherMessageErreur("Veuillez sélectionner un message.", "Aucune sélection");
@@ -383,7 +467,6 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         
         etat = Etat.MODIFICATION_STATUT;
         
-        // Confirmation
         String messageConfirmation = "Êtes-vous sûr de vouloir marquer ce message comme ";
         if ("EN_COURS".equals(nouveauStatut)) {
             messageConfirmation += "en cours ?";
@@ -404,25 +487,21 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
             return;
         }
         
-        // Mettre à jour le statut
         boolean gotanswer = "RESOLU".equals(nouveauStatut);
         boolean success = FeedbackDAO.mettreAJourStatut(feedbackSelectionne.getIdFeedback(), 
                                                        nouveauStatut, gotanswer);
         
         if (success) {
-            // Mettre à jour la table
             int selectedRow = vue.getTableFeedbacks().getSelectedRow();
             if (selectedRow != -1) {
                 vue.getTableModel().setValueAt(getStatutAvecIcone(nouveauStatut), selectedRow, 1);
                 vue.getTableModel().setValueAt(gotanswer ? "O" : "X", selectedRow, 5);
             }
             
-            // Mettre à jour le label
             vue.getLblStatut().setText("Statut : " + getStatutAvecIcone(nouveauStatut));
             
             afficherMessageSucces("Statut mis à jour avec succès.");
             
-            // Mettre à jour le feedback sélectionné
             feedbackSelectionne.setStatut(nouveauStatut);
             feedbackSelectionne.setGotanswer(gotanswer);
             
@@ -433,6 +512,11 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         etat = Etat.MESSAGE_SELECTIONNE;
     }
     
+    /**
+     * Envoie une réponse au feedback sélectionné après validation du contenu.
+     * Vérifie que la réponse respecte les contraintes de longueur minimale et maximale.
+     * Met à jour automatiquement le statut du feedback à "EN_COURS" et recharge l'historique.
+     */
     private void envoyerReponse() {
         if (feedbackSelectionne == null) {
             afficherMessageErreur("Veuillez sélectionner un message.", "Aucune sélection");
@@ -463,7 +547,6 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         
         etat = Etat.SAISIE_REPONSE;
         
-        // Confirmation
         int confirmation = JOptionPane.showConfirmDialog(
             vue,
             "Envoyer cette réponse à l'utilisateur ?",
@@ -480,25 +563,20 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         etat = Etat.ENVOI_REPONSE;
         
         try {
-            // Envoyer la réponse
             boolean success = FeedbackDAO.repondreFeedback(feedbackSelectionne.getIdFeedback(), 
                                                           admin.getIdUsager(), reponse);
             
             if (success) {
-                // Mettre à jour la table
                 int selectedRow = vue.getTableFeedbacks().getSelectedRow();
                 if (selectedRow != -1) {
                     vue.getTableModel().setValueAt(getStatutAvecIcone("EN_COURS"), selectedRow, 1);
                     vue.getTableModel().setValueAt("O", selectedRow, 5);
                 }
                 
-                // Vider la zone de réponse
                 vue.getTxtReponse().setText("");
                 
-                // Recharger l'historique
                 chargerHistorique();
                 
-                // Mettre à jour le feedback
                 feedbackSelectionne.setStatut("EN_COURS");
                 feedbackSelectionne.setGotanswer(true);
                 
@@ -514,6 +592,10 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         etat = Etat.MESSAGE_SELECTIONNE;
     }
     
+    /**
+     * Actualise la liste complète des feedbacks en rechargeant les données
+     * depuis la base de données. Efface la sélection et les détails affichés.
+     */
     private void actualiserFeedbacks() {
         etat = Etat.ACTUALISATION;
         chargerFeedbacks();
@@ -523,11 +605,14 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
         etat = Etat.CHARGEMENT_FEEDBACKS;
     }
     
-    // AJOUTÉ : Méthode pour retourner à la page d'administration
+    /**
+     * Retourne à la page d'administration principale après confirmation
+     * si une réponse est en cours de saisie.
+     * Ferme la page actuelle et rouvre la page d'administration.
+     */
     private void retourAdministration() {
         etat = Etat.RETOUR_ADMINISTRATION;
         
-        // Demander confirmation si des modifications sont en cours
         if (etat == Etat.SAISIE_REPONSE || etat == Etat.MODIFICATION_STATUT) {
             int confirmation = JOptionPane.showConfirmDialog(
                 vue,
@@ -545,45 +630,80 @@ public class ControleurGestionFeedback implements ActionListener, ListSelectionL
             }
         }
         
-        // Fermer la fenêtre courante
         vue.dispose();
         
-        // Réouvrir la page d'administration
         SwingUtilities.invokeLater(() -> {
             Page_Administration pageAdmin = new Page_Administration(emailAdmin);
             pageAdmin.setVisible(true);
         });
     }
     
+    /**
+     * Ferme la page de gestion des feedbacks.
+     */
     private void fermerPage() {
         vue.dispose();
     }
     
+    /**
+     * Affiche un message d'erreur dans une boîte de dialogue.
+     * 
+     * @param message le message d'erreur à afficher
+     * @param titre le titre de la boîte de dialogue
+     */
     private void afficherMessageErreur(String message, String titre) {
         JOptionPane.showMessageDialog(vue, message, titre, JOptionPane.ERROR_MESSAGE);
     }
     
+    /**
+     * Affiche un message de succès dans une boîte de dialogue.
+     * 
+     * @param message le message de succès à afficher
+     */
     private void afficherMessageSucces(String message) {
         JOptionPane.showMessageDialog(vue, message, "Succès", JOptionPane.INFORMATION_MESSAGE);
     }
     
+    /**
+     * Gère une erreur survenue pendant l'utilisation du contrôleur.
+     * Affiche un message d'erreur et passe à l'état ERREUR.
+     * 
+     * @param message la description de l'erreur
+     */
     private void gererErreur(String message) {
         System.err.println(message);
         afficherMessageErreur(message, "Erreur");
         etat = Etat.ERREUR;
     }
     
+    /**
+     * Gère une erreur critique survenue lors de l'initialisation.
+     * Affiche un message d'erreur et ferme la page.
+     * 
+     * @param message la description de l'erreur d'initialisation
+     */
     private void gererErreurInitialisation(String message) {
         System.err.println("Erreur initialisation: " + message);
         afficherMessageErreur(message, "Erreur d'initialisation");
         vue.dispose();
     }
     
-    // Getters pour débogage
+    /**
+     * Retourne l'état actuel du contrôleur.
+     * Utile pour le débogage et les tests.
+     * 
+     * @return l'état actuel du contrôleur
+     */
     public Etat getEtat() {
         return etat;
     }
     
+    /**
+     * Retourne l'administrateur connecté.
+     * Utile pour le débogage et les tests.
+     * 
+     * @return l'administrateur connecté
+     */
     public Usager getAdmin() {
         return admin;
     }

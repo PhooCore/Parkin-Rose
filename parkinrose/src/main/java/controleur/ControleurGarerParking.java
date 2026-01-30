@@ -20,27 +20,42 @@ import modele.dao.TarifParkingDAO;
 import modele.dao.UsagerDAO;
 import modele.dao.VehiculeUsagerDAO;
 
+/**
+ * Contrôleur gérant la réservation de places de parking.
+ * Permet aux utilisateurs de sélectionner un parking, choisir ou saisir un véhicule,
+ * consulter les tarifs et effectuer une réservation. Propose des parkings alternatifs
+ * en cas d'indisponibilité et gère les spécificités selon le type de véhicule (voiture, moto, camion).
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Garer_Parking
+ * et les modèles (Parking, Usager, VehiculeUsager, Abonnement).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurGarerParking implements ActionListener {
     
-    // États du contrôleur
+    /**
+     * Énumération des différents états possibles du contrôleur de réservation.
+     * Permet de suivre le cycle de vie de la réservation et les opérations en cours.
+     */
     private enum Etat {
+        /** État initial au démarrage du contrôleur */
         INITIAL,
+        /** L'utilisateur est en train de sélectionner un parking */
         SELECTION_PARKING,
+        /** Vérification de la disponibilité du parking pour le type de véhicule */
         VERIFICATION_DISPONIBILITE,
+        /** Modification du véhicule ou de la plaque en cours */
         MODIFICATION_VEHICULE,
+        /** Confirmation de la réservation en cours */
         CONFIRMATION_RESERVATION,
+        /** Redirection vers une autre page en cours */
         REDIRECTION,
+        /** Une erreur s'est produite */
         ERREUR
     }
     
-    // Références
     private Page_Garer_Parking vue;
     private Etat etat;
-    
-    // Contrôleurs
     private StationnementControleur stationnementControleur;
-    
-    // Données
     private String emailUtilisateur;
     private Usager usager;
     private List<Parking> listeParkings;
@@ -48,6 +63,13 @@ public class ControleurGarerParking implements ActionListener {
     private TarifParkingDAO tarifDAO;
     private List<Parking> parkingsProposes;
     
+    /**
+     * Constructeur du contrôleur de réservation de parking.
+     * Initialise le contrôleur avec la vue associée et un parking éventuellement présélectionné.
+     * 
+     * @param vue la page d'interface graphique de réservation
+     * @param parkingPreSelectionne le parking à présélectionner (peut être null)
+     */
     public ControleurGarerParking(Page_Garer_Parking vue, Parking parkingPreSelectionne) {
         this.vue = vue;
         this.emailUtilisateur = vue.getEmailUtilisateur();
@@ -57,6 +79,13 @@ public class ControleurGarerParking implements ActionListener {
         initialiserControleur(parkingPreSelectionne);
     }
     
+    /**
+     * Initialise le contrôleur en chargeant l'utilisateur, le contrôleur de stationnement,
+     * la liste des parkings et en configurant la vue.
+     * En cas d'erreur, gère l'erreur d'initialisation.
+     * 
+     * @param parkingPreSelectionne le parking à présélectionner dans la liste
+     */
     private void initialiserControleur(Parking parkingPreSelectionne) {
         try {
             chargerUtilisateur();
@@ -70,6 +99,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Charge les informations de l'utilisateur depuis la base de données.
+     * 
+     * @throws Exception si l'utilisateur n'est pas trouvé
+     */
     private void chargerUtilisateur() throws Exception {
         this.usager = UsagerDAO.getUsagerByEmail(emailUtilisateur);
         if (usager == null) {
@@ -77,10 +111,18 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Initialise le contrôleur de stationnement qui gère les opérations
+     * de création et de gestion des stationnements.
+     */
     private void initialiserStationnementControleur() {
         this.stationnementControleur = new StationnementControleur(emailUtilisateur);
     }
     
+    /**
+     * Charge la liste complète des parkings disponibles depuis la base de données.
+     * En cas d'erreur, initialise une liste vide.
+     */
     private void chargerParkings() {
         try {
             this.listeParkings = ParkingDAO.getInstance().getAllParkings();
@@ -93,6 +135,12 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Initialise la vue en configurant les écouteurs, remplissant les informations utilisateur,
+     * chargeant la liste des parkings dans le ComboBox et affichant le véhicule principal.
+     * 
+     * @param parkingPreSelectionne le parking à présélectionner
+     */
     private void initialiserVue(Parking parkingPreSelectionne) {
         configurerListeners();
         vue.setNomUsager(usager.getNomUsager());
@@ -103,6 +151,11 @@ public class ControleurGarerParking implements ActionListener {
         chargerVehiculePrincipal();
     }
     
+    /**
+     * Configure tous les écouteurs d'événements pour les composants interactifs de la vue.
+     * Connecte les boutons, le ComboBox de parkings et les boutons radio de type de véhicule
+     * aux actions appropriées.
+     */
     private void configurerListeners() {
         vue.getBtnAnnuler().addActionListener(this);
         vue.getBtnReserver().addActionListener(this);
@@ -120,7 +173,6 @@ public class ControleurGarerParking implements ActionListener {
             }
         });
         
-        // AJOUTER DES LISTENERS SUR LES RADIO BUTTONS
         ActionListener radioListener = e -> {
             if (etat == Etat.SELECTION_PARKING || etat == Etat.VERIFICATION_DISPONIBILITE) {
                 int index = vue.getComboParking().getSelectedIndex();
@@ -130,12 +182,18 @@ public class ControleurGarerParking implements ActionListener {
             }
         };
         
-        // Vous devez ajouter des getters dans Page_Garer_Parking pour ces boutons
         vue.getRadioVoiture().addActionListener(radioListener);
         vue.getRadioMoto().addActionListener(radioListener);
         vue.getRadioCamion().addActionListener(radioListener);
     }
     
+    /**
+     * Charge la liste des parkings dans le ComboBox avec leurs informations principales
+     * et des indicateurs (M=moto, TS=tarif soirée, G=gratuit, R=relais).
+     * Présélectionne le parking indiqué s'il existe.
+     * 
+     * @param parkingPreSelectionne le parking à présélectionner dans la liste
+     */
     private void chargerComboParkings(Parking parkingPreSelectionne) {
         DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
         int indexSelectionne = -1;
@@ -188,6 +246,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Charge et affiche le véhicule principal de l'utilisateur.
+     * Si aucun véhicule principal n'existe, affiche le premier véhicule disponible.
+     * Si aucun véhicule n'est enregistré, affiche un message approprié.
+     */
     private void chargerVehiculePrincipal() {
         try {
             VehiculeUsager vehiculePrincipal = VehiculeUsagerDAO.getVehiculePrincipalStatic(usager.getIdUsager());
@@ -209,11 +272,23 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Affiche les informations d'un véhicule dans la vue.
+     * 
+     * @param vehicule le véhicule à afficher
+     */
     private void afficherVehicule(VehiculeUsager vehicule) {
         vue.setPlaque(vehicule.getPlaqueImmatriculation());
         vue.setTypeVehicule(vehicule.getTypeVehicule());
     }
     
+    /**
+     * Gère les événements d'action des composants de la vue.
+     * Route les actions vers les méthodes appropriées en fonction de l'état actuel
+     * et de la source de l'événement.
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
@@ -232,19 +307,22 @@ public class ControleurGarerParking implements ActionListener {
                 break;
                 
             case MODIFICATION_VEHICULE:
-                // Le traitement se fait dans les méthodes spécifiques
                 break;
                 
             case CONFIRMATION_RESERVATION:
-                // Le traitement se fait dans les méthodes spécifiques
                 break;
                 
             case ERREUR:
-                // Ne rien faire en état d'erreur
                 break;
         }
     }
     
+    /**
+     * Met à jour toutes les informations du parking sélectionné dans la vue :
+     * places disponibles, places moto, tarifs et état du bouton de réservation.
+     * 
+     * @param index l'indice du parking dans la liste
+     */
     private void mettreAJourInfosParking(int index) {
         try {
             if (index < 0 || index >= listeParkings.size()) return;
@@ -267,6 +345,13 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Met à jour l'affichage des tarifs pour le parking sélectionné.
+     * Gère les cas spéciaux : parkings gratuits, relais Tisséo, abonnements moto,
+     * et tarifs normaux avec tarif soirée éventuel.
+     * 
+     * @param parking le parking dont on affiche les tarifs
+     */
     private void mettreAJourTarifsParking(Parking parking) {
         try {
             double tarifHoraire = tarifDAO.getTarifHoraire(parking.getIdParking());
@@ -276,7 +361,6 @@ public class ControleurGarerParking implements ActionListener {
             boolean estGratuit = tarifDAO.estParkingGratuit(parking.getIdParking());
             boolean estRelais = parking.isEstRelais();
             
-            // AJOUTER CETTE VÉRIFICATION POUR L'ABONNEMENT MOTO
             boolean estMoto = "Moto".equals(vue.getTypeVehicule());
             boolean aAbonnementMoto = false;
             
@@ -291,7 +375,6 @@ public class ControleurGarerParking implements ActionListener {
                 }
             }
             
-            // MODIFIER LA LOGIQUE D'AFFICHAGE
             if (aAbonnementMoto) {
                 vue.setTarifHoraire("GRATUIT (Abonnement moto)");
                 vue.setTarifSoiree("Stationnement gratuit avec votre abonnement");
@@ -333,6 +416,10 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Traite l'action du bouton de réservation qui peut être en mode "Réserver"
+     * ou "Alternatives" selon la disponibilité du parking.
+     */
     private void traiterActionReservation() {
         String texteBouton = vue.getBtnReserver().getText();
         
@@ -343,6 +430,10 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Lance le processus de réservation en validant les prérequis,
+     * la compatibilité parking-véhicule, puis en demandant confirmation avant réservation.
+     */
     private void reserver() {
         if (!validerPreRequisReservation()) {
             return;
@@ -359,6 +450,13 @@ public class ControleurGarerParking implements ActionListener {
         effectuerReservation();
     }
     
+    /**
+     * Valide les prérequis avant une réservation :
+     * parking sélectionné, plaque valide, type de véhicule, places disponibles.
+     * Si le parking est complet, propose des alternatives.
+     * 
+     * @return true si tous les prérequis sont validés, false sinon
+     */
     private boolean validerPreRequisReservation() {
         if (parkingSelectionne == null) {
             vue.afficherMessageErreur("Aucun parking sélectionné", 
@@ -398,6 +496,12 @@ public class ControleurGarerParking implements ActionListener {
         return true;
     }
     
+    /**
+     * Valide que le parking sélectionné est compatible avec le type de véhicule.
+     * Vérifie les places moto pour les motos et la hauteur maximale pour les camions.
+     * 
+     * @return true si le parking est compatible, false sinon
+     */
     private boolean validerParkingPourVehicule() {
         String typeVehicule = vue.getTypeVehicule();
         
@@ -411,6 +515,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Valide que le parking dispose de places moto disponibles.
+     * 
+     * @return true si des places moto sont disponibles, false sinon
+     */
     private boolean validerParkingPourMoto() {
         try {
             if (!parkingSelectionne.hasMoto()) {
@@ -433,6 +542,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Valide que le parking a une hauteur suffisante pour un camion (3.0m minimum).
+     * 
+     * @return true si la hauteur est suffisante ou non limitée, false sinon
+     */
     private boolean validerHauteurParking() {
         try {
             double hauteurCamion = 3.0;
@@ -450,6 +564,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Propose une liste de parkings alternatifs proches en cas de parking complet.
+     * Affiche jusqu'à 5 parkings disponibles avec leurs informations et permet
+     * à l'utilisateur d'en sélectionner un directement.
+     */
     private void proposerParkingsProches() {
         try {
             parkingsProposes = ParkingDAO.getInstance().trouverParkingsProches(
@@ -512,6 +631,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Sélectionne un parking alternatif dans le ComboBox et met à jour l'affichage.
+     * 
+     * @param parking le parking alternatif à sélectionner
+     */
     private void selectionnerParkingAlternatif(Parking parking) {
         int index = -1;
         for (int i = 0; i < listeParkings.size(); i++) {
@@ -533,6 +657,12 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Demande confirmation à l'utilisateur avant d'effectuer la réservation.
+     * Affiche un récapitulatif complet : parking, véhicule, plaque et tarifs.
+     * 
+     * @return true si l'utilisateur confirme, false sinon
+     */
     private boolean demanderConfirmationReservation() {
         StringBuilder message = new StringBuilder();
         message.append("Confirmez-vous la réservation ?\n\n");
@@ -567,6 +697,10 @@ public class ControleurGarerParking implements ActionListener {
         return choix == JOptionPane.YES_OPTION;
     }
     
+    /**
+     * Effectue la réservation en appelant le contrôleur de stationnement.
+     * Affiche un message de confirmation en cas de succès et redirige vers la page principale.
+     */
     private void effectuerReservation() {
         etat = Etat.CONFIRMATION_RESERVATION;
         
@@ -596,6 +730,10 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Affiche un message de confirmation de la réservation avec les détails
+     * du parking, l'heure d'arrivée et les informations du véhicule.
+     */
     private void afficherConfirmationReservation() {
         String message = "Réservation confirmée !\n\n" +
                         "Parking: " + parkingSelectionne.getLibelleParking() + "\n" +
@@ -610,6 +748,10 @@ public class ControleurGarerParking implements ActionListener {
             JOptionPane.INFORMATION_MESSAGE);
     }
     
+    /**
+     * Permet à l'utilisateur de modifier la plaque d'immatriculation.
+     * Propose deux options : choisir un véhicule existant ou saisir une nouvelle plaque.
+     */
     private void modifierPlaque() {
         String[] options = {"Choisir un véhicule existant", "Saisir une nouvelle plaque"};
         int choix = JOptionPane.showOptionDialog(vue,
@@ -628,6 +770,10 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Affiche la liste des véhicules enregistrés de l'utilisateur et permet d'en sélectionner un.
+     * Si aucun véhicule n'existe, propose d'en ajouter un nouveau.
+     */
     private void choisirVehiculeExistant() {
         try {
             List<VehiculeUsager> vehicules = VehiculeUsagerDAO.getVehiculesByUsagerStatic(usager.getIdUsager());
@@ -673,6 +819,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Permet de saisir une nouvelle plaque d'immatriculation.
+     * Valide le format (AA-123-AA ou AA123AA), normalise la plaque et propose
+     * de l'enregistrer pour une utilisation future.
+     */
     private void saisirNouvellePlaque() {
         String plaqueActuelle = vue.getPlaque();
         if ("AUCUN VÉHICULE".equals(plaqueActuelle) || "ERREUR CHARGEMENT".equals(plaqueActuelle)) {
@@ -727,11 +878,25 @@ public class ControleurGarerParking implements ActionListener {
         etat = Etat.SELECTION_PARKING;
     }
     
+    /**
+     * Valide le format d'une plaque d'immatriculation française.
+     * Accepte les formats AA-123-AA et AA123AA.
+     * 
+     * @param plaque la plaque à valider
+     * @return true si le format est valide, false sinon
+     */
     private boolean validerFormatPlaque(String plaque) {
         return plaque.matches("[A-Z]{2}-\\d{3}-[A-Z]{2}") || 
                plaque.matches("[A-Z]{2}\\d{3}[A-Z]{2}");
     }
     
+    /**
+     * Normalise le format d'une plaque d'immatriculation en ajoutant les tirets
+     * si nécessaire (AA123AA → AA-123-AA).
+     * 
+     * @param plaque la plaque à normaliser
+     * @return la plaque normalisée au format AA-123-AA
+     */
     private String normaliserFormatPlaque(String plaque) {
         if (plaque.matches("[A-Z]{2}\\d{3}[A-Z]{2}")) {
             return plaque.substring(0, 2) + "-" + 
@@ -741,6 +906,11 @@ public class ControleurGarerParking implements ActionListener {
         return plaque;
     }
     
+    /**
+     * Affiche une boîte de dialogue pour sélectionner le type de véhicule.
+     * 
+     * @return le type sélectionné ("Voiture", "Moto" ou "Camion"), ou null si annulé
+     */
     private String demanderTypeVehicule() {
         String[] types = {"Voiture", "Moto", "Camion"};
         return (String) JOptionPane.showInputDialog(vue,
@@ -752,6 +922,13 @@ public class ControleurGarerParking implements ActionListener {
             types[0]);
     }
     
+    /**
+     * Sauvegarde un nouveau véhicule dans la base de données.
+     * Vérifie que le véhicule n'existe pas déjà et demande s'il doit être
+     * défini comme véhicule principal.
+     * 
+     * @param plaque la plaque du véhicule à sauvegarder
+     */
     private void sauvegarderVehicule(String plaque) {
         try {
             String typeVehicule = vue.getTypeVehicule();
@@ -801,6 +978,10 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Annule la réservation après confirmation de l'utilisateur
+     * et redirige vers la page principale.
+     */
     private void annuler() {
         int confirmation = JOptionPane.showConfirmDialog(vue,
             "Êtes-vous sûr de vouloir annuler ?\nVos sélections seront perdues.",
@@ -813,6 +994,9 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Redirige l'utilisateur vers la page principale et ferme la page actuelle.
+     */
     private void redirigerVersPagePrincipale() {
         try {
             etat = Etat.REDIRECTION;
@@ -825,6 +1009,11 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
     
+    /**
+     * Vérifie la disponibilité du parking pour le type de véhicule sélectionné
+     * et met à jour l'apparence du bouton de réservation en conséquence.
+     * Configure le bouton en mode "Alternatives" si le parking est complet.
+     */
     private void verifierDisponibiliteEtMettreAJourBouton() {
         if (parkingSelectionne == null) return;
         
@@ -848,6 +1037,10 @@ public class ControleurGarerParking implements ActionListener {
         }
     }
 
+    /**
+     * Configure le bouton de réservation en mode "Alternatives" pour indiquer
+     * que le parking est complet et proposer d'autres options.
+     */
     private void mettreBoutonEnModeAlternatives() {
         JButton btnReserver = vue.getBtnReserver();
         btnReserver.setText("Alternatives");
@@ -856,6 +1049,10 @@ public class ControleurGarerParking implements ActionListener {
         btnReserver.setToolTipText("Ce parking est complet. Cliquez pour voir des alternatives.");
     }
 
+    /**
+     * Configure le bouton de réservation en mode normal "Réserver"
+     * lorsque des places sont disponibles.
+     */
     private void mettreBoutonEnModeReserver() {
         JButton btnReserver = vue.getBtnReserver();
         btnReserver.setText("Réserver");
@@ -864,12 +1061,25 @@ public class ControleurGarerParking implements ActionListener {
         btnReserver.setToolTipText("Réserver une place dans ce parking");
     }
     
+    /**
+     * Gère une erreur survenue pendant l'utilisation du contrôleur.
+     * Affiche un message d'erreur et passe à l'état ERREUR.
+     * 
+     * @param titre le titre du message d'erreur
+     * @param message la description détaillée de l'erreur
+     */
     private void gererErreur(String titre, String message) {
         System.err.println(titre + ": " + message);
         vue.afficherMessageErreur(titre, message);
         etat = Etat.ERREUR;
     }
     
+    /**
+     * Gère une erreur critique survenue lors de l'initialisation.
+     * Affiche un message d'erreur et ferme l'application.
+     * 
+     * @param message la description de l'erreur d'initialisation
+     */
     private void gererErreurInitialisation(String message) {
         System.err.println("Erreur initialisation: " + message);
         JOptionPane.showMessageDialog(vue,
@@ -879,7 +1089,12 @@ public class ControleurGarerParking implements ActionListener {
         System.exit(1);
     }
     
-    // Getters pour débogage
+    /**
+     * Retourne l'état actuel du contrôleur.
+     * Utile pour le débogage et les tests.
+     * 
+     * @return l'état actuel du contrôleur
+     */
     public Etat getEtat() {
         return etat;
     }

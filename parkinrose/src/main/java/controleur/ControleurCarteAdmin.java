@@ -10,14 +10,32 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Contrôleur gérant la carte interactive d'administration des parkings.
+ * Permet aux administrateurs d'ajouter, modifier, supprimer et visualiser les parkings
+ * directement sur une carte OpenStreetMap.
+ * Gère les interactions entre la vue CarteAdminOSMPanel et le modèle (Parking, ParkingDAO).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurCarteAdmin implements ActionListener {
     
+    /**
+     * Énumération des différents états possibles du contrôleur d'administration de la carte.
+     * Permet de suivre le mode d'interaction avec la carte et les opérations en cours.
+     */
     private enum EtatAdmin {
+        /** État initial au démarrage du contrôleur */
         INITIAL,
+        /** Mode visualisation simple de la carte et des parkings */
         VISUALISATION,
+        /** Mode d'ajout activé, en attente de sélection d'un emplacement */
         MODE_AJOUT,
+        /** Formulaire de création ou modification ouvert */
         FORMULAIRE_OUVERT,
+        /** Modification d'un parking existant en cours */
         MODIFICATION,
+        /** Une erreur s'est produite */
         ERREUR
     }
     
@@ -26,12 +44,18 @@ public class ControleurCarteAdmin implements ActionListener {
     private String emailAdmin;
     private ParkingDAO parkingDAO;
     private Map<String, Parking> parkingsMap;
-    
     private Double latitudeSelectionnee;
     private Double longitudeSelectionnee;
     
     private static final double TARIF_SOIREE = 5.90;
     
+    /**
+     * Constructeur du contrôleur de la carte d'administration.
+     * Initialise le contrôleur avec la vue associée et charge les parkings existants.
+     * 
+     * @param vue le panel de la carte d'administration
+     * @param emailAdmin l'email de l'administrateur connecté
+     */
     public ControleurCarteAdmin(CarteAdminOSMPanel vue, String emailAdmin) {
         this.vue = vue;
         this.emailAdmin = emailAdmin;
@@ -41,6 +65,10 @@ public class ControleurCarteAdmin implements ActionListener {
         initialiserControleur();
     }
     
+    /**
+     * Initialise le contrôleur en configurant la vue et en passant à l'état de visualisation.
+     * En cas d'erreur, affiche un message et gère l'erreur d'initialisation.
+     */
     private void initialiserControleur() {
         try {
             this.etat = EtatAdmin.INITIAL;
@@ -53,14 +81,27 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
+    /**
+     * Initialise la vue en configurant les écouteurs d'événements.
+     */
     private void initialiserVue() {
         configurerListeners();
     }
     
+    /**
+     * Configure les écouteurs d'événements pour les composants de la vue.
+     * Note : les listeners sont principalement configurés dans la vue elle-même.
+     */
     private void configurerListeners() {
         // Les listeners sont déjà configurés dans la vue
     }
     
+    /**
+     * Gère les événements d'action des composants de la vue.
+     * Traite principalement l'activation du mode ajout de parking.
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         if (etat == EtatAdmin.ERREUR) {
@@ -80,8 +121,11 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
-    // ===================== MÉTHODES GÉNÉRALES =====================
-    
+    /**
+     * Active le mode d'ajout de parking sur la carte.
+     * Permet à l'administrateur de cliquer sur la carte pour sélectionner l'emplacement
+     * d'un nouveau parking. Affiche des instructions à l'utilisateur.
+     */
     public void activerModeAjout() {
         if (vue.getWebEngine() == null) {
             vue.afficherMessageErreur("Carte non chargée", 
@@ -90,7 +134,6 @@ public class ControleurCarteAdmin implements ActionListener {
         }
         
         try {
-            // Activer le mode ajout dans la carte JavaScript
             vue.getWebEngine().executeScript("if (window.activateAddMode) window.activateAddMode();");
             
             etat = EtatAdmin.MODE_AJOUT;
@@ -109,6 +152,10 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
+    /**
+     * Désactive le mode d'ajout de parking et retourne au mode de visualisation.
+     * Supprime le marqueur temporaire de la carte si présent.
+     */
     public void desactiverModeAjout() {
         try {
             if (vue.getWebEngine() != null) {
@@ -120,8 +167,13 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
-    // ===================== GESTION DES COORDONNÉES =====================
-    
+    /**
+     * Enregistre les coordonnées sélectionnées sur la carte et met à jour l'affichage.
+     * Si le mode ajout est actif, ouvre automatiquement le formulaire de création de parking.
+     * 
+     * @param latitude la latitude du point sélectionné
+     * @param longitude la longitude du point sélectionné
+     */
     public void setCoordonneesSelectionnees(Double latitude, Double longitude) {
         this.latitudeSelectionnee = latitude;
         this.longitudeSelectionnee = longitude;
@@ -132,8 +184,11 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
-    // ===================== GESTION DES FORMULAIRES =====================
-    
+    /**
+     * Ouvre le formulaire de création d'un nouveau parking.
+     * Nécessite que des coordonnées aient été préalablement sélectionnées sur la carte.
+     * Désactive le mode ajout avant l'ouverture du formulaire.
+     */
     private void ouvrirFormulaireParking() {
         if (latitudeSelectionnee == null || longitudeSelectionnee == null) {
             vue.afficherMessageErreur("Emplacement requis",
@@ -144,10 +199,7 @@ public class ControleurCarteAdmin implements ActionListener {
         etat = EtatAdmin.FORMULAIRE_OUVERT;
         
         try {
-            // Désactiver le mode ajout
             desactiverModeAjout();
-            
-            // Ouvrir le formulaire d'ajout de parking
             vue.ouvrirFormulaireParking();
             
         } catch (Exception e) {
@@ -155,6 +207,12 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
+    /**
+     * Ouvre le formulaire de modification d'un parking existant.
+     * Affiche un message d'erreur si le parking n'est pas trouvé dans la map locale.
+     * 
+     * @param idParking l'identifiant du parking à modifier
+     */
     public void ouvrirFormulaireModificationParking(String idParking) {
         Parking parking = parkingsMap.get(idParking);
         if (parking == null) {
@@ -166,7 +224,6 @@ public class ControleurCarteAdmin implements ActionListener {
         etat = EtatAdmin.MODIFICATION;
         
         try {
-            // Ouvrir le formulaire de modification
             vue.ouvrirFormulaireModificationParking(idParking);
             
         } catch (Exception e) {
@@ -174,30 +231,29 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
-    // ===================== GESTION DES PARKINGS =====================
-    
+    /**
+     * Ajoute un nouveau parking à la base de données et à la carte.
+     * Valide les données du parking avant l'insertion, met à jour la map locale
+     * et recharge la carte pour afficher le nouveau parking.
+     * 
+     * @param parking le parking à ajouter
+     */
     public void ajouterParking(Parking parking) {
         try {
-            // Validation du parking
             if (!validerParking(parking)) {
                 return;
             }
             
-            // Ajouter le parking à la base de données
             boolean succes = parkingDAO.creerParking(parking);
             
             if (succes) {
-                // Ajouter le parking à la map locale
                 parkingsMap.put(parking.getIdParking(), parking);
                 
-                // Afficher un message de confirmation
                 vue.afficherMessageSucces("Parking ajouté",
                     "Le parking " + parking.getLibelleParking() + " a été ajouté avec succès !");
                 
-                // Recharger la carte
                 rechargerCarte();
                 
-                // Réinitialiser les coordonnées
                 latitudeSelectionnee = null;
                 longitudeSelectionnee = null;
                 
@@ -213,25 +269,27 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
+    /**
+     * Modifie un parking existant dans la base de données.
+     * Valide les nouvelles données, met à jour la base de données et la map locale,
+     * puis recharge la carte pour afficher les modifications.
+     * 
+     * @param parking le parking avec les données modifiées
+     */
     public void modifierParking(Parking parking) {
         try {
-            // Validation du parking
             if (!validerParking(parking)) {
                 return;
             }
             
-            // Mettre à jour le parking dans la base de données
             boolean succes = parkingDAO.mettreAJourParking(parking);
             
             if (succes) {
-                // Mettre à jour la map locale
                 parkingsMap.put(parking.getIdParking(), parking);
                 
-                // Afficher un message de confirmation
                 vue.afficherMessageSucces("Parking modifié",
                     "Le parking " + parking.getLibelleParking() + " a été modifié avec succès !");
                 
-                // Recharger la carte
                 rechargerCarte();
                 
                 etat = EtatAdmin.VISUALISATION;
@@ -246,6 +304,13 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
+    /**
+     * Supprime un parking de la base de données et de la carte.
+     * Demande une confirmation à l'administrateur avant la suppression définitive.
+     * Met à jour la map locale et recharge la carte après suppression.
+     * 
+     * @param idParking l'identifiant du parking à supprimer
+     */
     public void supprimerParking(String idParking) {
         Parking parking = parkingsMap.get(idParking);
         if (parking == null) {
@@ -254,7 +319,6 @@ public class ControleurCarteAdmin implements ActionListener {
             return;
         }
         
-        // Demander confirmation
         int confirmation = JOptionPane.showConfirmDialog(vue,
             "Êtes-vous sûr de vouloir supprimer le parking :\n" +
             parking.getLibelleParking() + " ?\n\n" +
@@ -268,18 +332,14 @@ public class ControleurCarteAdmin implements ActionListener {
         }
         
         try {
-            // Supprimer le parking de la base de données
             boolean succes = parkingDAO.supprimerParking(parking);
             
             if (succes) {
-                // Retirer le parking de la map locale
                 parkingsMap.remove(idParking);
                 
-                // Afficher un message de confirmation
                 vue.afficherMessageSucces("Parking supprimé",
                     "Le parking " + parking.getLibelleParking() + " a été supprimé avec succès !");
                 
-                // Recharger la carte
                 rechargerCarte();
                 
             } else {
@@ -292,8 +352,15 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
+    /**
+     * Valide les données d'un parking avant insertion ou modification.
+     * Vérifie que tous les champs obligatoires sont remplis et que les valeurs
+     * sont cohérentes (places disponibles, tarifs, coordonnées GPS, etc.).
+     * 
+     * @param parking le parking à valider
+     * @return true si le parking est valide, false sinon (avec affichage d'un message d'erreur)
+     */
     private boolean validerParking(Parking parking) {
-        // Validation des champs obligatoires
         if (parking.getLibelleParking() == null || parking.getLibelleParking().trim().isEmpty()) {
             vue.afficherMessageErreur("Nom manquant", "Le nom du parking est obligatoire.");
             return false;
@@ -309,7 +376,6 @@ public class ControleurCarteAdmin implements ActionListener {
             return false;
         }
         
-        // Validation des nombres
         if (parking.getNombrePlaces() <= 0) {
             vue.afficherMessageErreur("Places invalides", "Le nombre de places doit être positif.");
             return false;
@@ -338,28 +404,24 @@ public class ControleurCarteAdmin implements ActionListener {
             }
         }
         
-        // Validation de la hauteur
         if (parking.getHauteurParking() < 0) {
             vue.afficherMessageErreur("Hauteur invalide",
                 "La hauteur doit être positive ou nulle (0 pour non limitée).");
             return false;
         }
         
-        // Validation du tarif
         if (!parking.isEstRelais() && parking.getTarifHoraire() < 0) {
             vue.afficherMessageErreur("Tarif invalide",
                 "Le tarif horaire doit être positif ou nul.");
             return false;
         }
         
-        // Si c'est un relais Tisséo, le tarif doit être 0
         if (parking.isEstRelais() && parking.getTarifHoraire() != 0) {
             vue.afficherMessageErreur("Tarif relais invalide",
                 "Un parking relais Tisséo doit être gratuit (tarif = 0).");
             return false;
         }
         
-        // Validation des coordonnées
         if (parking.getPositionX() == null || parking.getPositionY() == null ||
             parking.getPositionX() == 0.0f || parking.getPositionY() == 0.0f) {
             vue.afficherMessageErreur("Coordonnées manquantes",
@@ -370,16 +432,16 @@ public class ControleurCarteAdmin implements ActionListener {
         return true;
     }
     
-    // ===================== GESTION DE LA CARTE =====================
-    
+    /**
+     * Recharge complètement la carte et réinitialise l'état du contrôleur.
+     * Désactive le mode ajout si actif et efface les coordonnées sélectionnées.
+     */
     public void rechargerCarte() {
         try {
             vue.recharger();
             
-            // Désactiver le mode ajout si actif
             desactiverModeAjout();
             
-            // Réinitialiser les coordonnées
             latitudeSelectionnee = null;
             longitudeSelectionnee = null;
             
@@ -390,6 +452,12 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
+    /**
+     * Charge tous les parkings depuis la base de données et les stocke dans la map locale.
+     * Permet de maintenir une copie locale des parkings pour un accès rapide.
+     * 
+     * @throws SQLException si une erreur survient lors de l'accès à la base de données
+     */
     public void chargerParkings() {
         try {
             java.util.List<Parking> parkings = parkingDAO.findAll();
@@ -404,14 +472,26 @@ public class ControleurCarteAdmin implements ActionListener {
         }
     }
     
-    // ===================== GESTION DES ERREURS =====================
-    
+    /**
+     * Gère une erreur survenue pendant l'utilisation du contrôleur.
+     * Affiche un message d'erreur à l'utilisateur et passe à l'état ERREUR.
+     * 
+     * @param titre le titre du message d'erreur
+     * @param message la description détaillée de l'erreur
+     */
     private void gererErreur(String titre, String message) {
         System.err.println(titre + ": " + message);
         vue.afficherMessageErreur(titre, message);
         etat = EtatAdmin.ERREUR;
     }
     
+    /**
+     * Gère une erreur critique survenue lors de l'initialisation.
+     * Affiche un message d'erreur et ferme l'application.
+     * 
+     * @param titre le titre du message d'erreur
+     * @param message la description détaillée de l'erreur
+     */
     private void gererErreurInitialisation(String titre, String message) {
         System.err.println(titre + ": " + message);
         JOptionPane.showMessageDialog(vue,
@@ -421,34 +501,69 @@ public class ControleurCarteAdmin implements ActionListener {
         System.exit(1);
     }
     
-    // ===================== GETTERS ET SETTERS =====================
-    
+    /**
+     * Retourne l'état actuel du contrôleur.
+     * 
+     * @return l'état actuel
+     */
     public EtatAdmin getEtat() {
         return etat;
     }
     
+    /**
+     * Retourne l'email de l'administrateur connecté.
+     * 
+     * @return l'email de l'administrateur
+     */
     public String getEmailAdmin() {
         return emailAdmin;
     }
     
+    /**
+     * Retourne la map des parkings chargés localement.
+     * 
+     * @return la map associant les IDs de parking aux objets Parking
+     */
     public Map<String, Parking> getParkingsMap() {
         return parkingsMap;
     }
     
+    /**
+     * Retourne la latitude du point actuellement sélectionné sur la carte.
+     * 
+     * @return la latitude sélectionnée, ou null si aucun point n'est sélectionné
+     */
     public Double getLatitudeSelectionnee() {
         return latitudeSelectionnee;
     }
     
+    /**
+     * Retourne la longitude du point actuellement sélectionné sur la carte.
+     * 
+     * @return la longitude sélectionnée, ou null si aucun point n'est sélectionné
+     */
     public Double getLongitudeSelectionnee() {
         return longitudeSelectionnee;
     }
     
+    /**
+     * Retourne le tarif soirée par défaut pour les parkings.
+     * 
+     * @return le tarif soirée (5.90€)
+     */
     public static double getTarifSoiree() {
         return TARIF_SOIREE;
     }
     
-    // ===================== MÉTHODES UTILITAIRES =====================
-    
+    /**
+     * Génère un identifiant unique pour un nouveau parking basé sur son nom.
+     * Transforme le nom en majuscules, remplace les espaces par des underscores,
+     * ajoute le préfixe "PARK_" et vérifie l'unicité dans la base de données.
+     * En cas de conflit, ajoute un suffixe numérique incrémental.
+     * 
+     * @param nom le nom du parking servant de base pour l'ID
+     * @return un identifiant unique de parking
+     */
     public String genererIdParking(String nom) {
         try {
             String baseId = nom.toUpperCase()
@@ -460,7 +575,6 @@ public class ControleurCarteAdmin implements ActionListener {
                 baseId = "PARK_" + baseId;
             }
             
-            // Vérifier l'unicité
             String finalId = baseId;
             int counter = 1;
             
