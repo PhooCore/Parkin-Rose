@@ -7,7 +7,6 @@ import javax.swing.*;
 
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -17,24 +16,41 @@ import java.awt.event.MouseEvent;
 import modele.dao.UsagerDAO;
 import modele.Usager;
 
+/**
+ * Contrôleur gérant le processus d'authentification des utilisateurs.
+ * Gère la connexion, la récupération de mot de passe et la redirection vers l'inscription.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Authentification
+ * et le modèle (Usager, UsagerDAO).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurAuthentification implements ActionListener {
     
-    // États possibles du contrôleur
+    /**
+     * Énumération des différents états possibles du processus d'authentification.
+     * Permet de suivre le cycle de vie de la connexion utilisateur.
+     */
     public enum EtatAuthentification {
+        /** État initial, en attente d'une action de l'utilisateur */
         ATTENTE_CONNEXION,
+        /** L'utilisateur est en train de saisir son email */
         SAISIE_EMAIL,
+        /** L'utilisateur est en train de saisir son mot de passe */
         SAISIE_MDP,
+        /** Validation des identifiants en cours */
         VALIDATION,
+        /** Processus de récupération de mot de passe oublié */
         OUBLI_MDP,
+        /** Navigation vers la page de création de compte */
         CREATION_COMPTE,
+        /** Utilisateur authentifié avec succès */
         CONNECTE
     }
     
     private Page_Authentification vue;
     private EtatAuthentification etat;
-    private String emailOublieMdp; 
+    private String emailOublieMdp;
     
-    // Constantes pour les messages
     private static final String TITRE_CHAMPS_MANQUANTS = "Champs manquants";
     private static final String TITRE_COMPTE_INTROUVABLE = "Compte introuvable";
     private static final String TITRE_ERREUR_TECHNIQUE = "Erreur technique";
@@ -43,17 +59,26 @@ public class ControleurAuthentification implements ActionListener {
     private static final String TITRE_EMAIL_ENVOYE = "Email envoyé";
     private static final String TITRE_EMAIL_INCONNU = "Email inconnu";
     
+    /**
+     * Constructeur du contrôleur d'authentification.
+     * Initialise le contrôleur avec la vue associée et configure les écouteurs d'événements.
+     * 
+     * @param vue la page d'interface graphique d'authentification
+     */
     public ControleurAuthentification(Page_Authentification vue) {
         this.vue = vue;
         this.etat = EtatAuthentification.ATTENTE_CONNEXION;
         configurerListeners();
     }
     
+    /**
+     * Configure tous les écouteurs d'événements pour les composants interactifs de la vue.
+     * Connecte le bouton de connexion, les champs de saisie avec validation par Entrée,
+     * et les liens hypertextes (mot de passe oublié, création de compte).
+     */
     private void configurerListeners() {
-        // Bouton de connexion
         vue.btnLogin.addActionListener(this);
         
-        // Entrée dans les champs texte
         vue.txtEmail.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -81,7 +106,13 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Configure un label comme un hyperlien cliquable
+     * Configure un JLabel pour se comporter comme un lien hypertexte cliquable.
+     * Ajoute les effets visuels de survol et l'action à exécuter au clic.
+     * 
+     * @param label le label à transformer en hyperlien
+     * @param couleurSurvol la couleur affichée lors du survol de la souris
+     * @param couleurNormale la couleur par défaut du label
+     * @param action l'action à exécuter lors du clic
      */
     private void configurerLabelHyperlink(JLabel label, Color couleurSurvol, 
                                          Color couleurNormale, Runnable action) {
@@ -104,11 +135,17 @@ public class ControleurAuthentification implements ActionListener {
         });
     }
     
+    /**
+     * Gère les événements d'action des composants de la vue.
+     * Route les actions vers les méthodes appropriées en fonction de l'état actuel
+     * et de la source de l'événement (bouton connexion, liens hypertextes, validation par Entrée).
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         String action = "";
         
-        // Déterminer l'action en fonction de la source
         if (e.getSource() == vue.btnLogin) {
             action = "CONNEXION";
         } else if (e.getSource() == vue.lblForgotPassword) {
@@ -119,7 +156,6 @@ public class ControleurAuthentification implements ActionListener {
             action = e.getActionCommand();
         }
         
-        // Traiter l'action selon l'état courant
         switch (etat) {
             case ATTENTE_CONNEXION:
             case SAISIE_EMAIL:
@@ -155,7 +191,10 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Traite la tentative de connexion
+     * Traite la tentative de connexion de l'utilisateur.
+     * Valide les champs saisis, vérifie l'existence du compte dans la base de données,
+     * et compare le mot de passe fourni avec celui stocké.
+     * Redirige vers la page principale en cas de succès ou affiche un message d'erreur approprié.
      */
     private void traiterConnexion() {
         String email = vue.txtEmail.getText().trim();
@@ -210,7 +249,9 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Gère le processus "mot de passe oublié"
+     * Gère le processus de récupération de mot de passe oublié.
+     * Affiche une boîte de dialogue pour saisir l'email et déclenche la validation.
+     * Si l'utilisateur annule, retourne à l'état d'attente de connexion.
      */
     private void traiterOubliMdp() {
         etat = EtatAuthentification.OUBLI_MDP;
@@ -229,7 +270,10 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Valide l'email pour la réinitialisation
+     * Valide l'email fourni pour la réinitialisation du mot de passe.
+     * Vérifie si l'email existe dans la base de données et affiche un message
+     * de confirmation ou d'erreur selon le cas.
+     * Réinitialise l'email mémorisé et retourne à l'état d'attente après validation.
      */
     private void validerEmailOublie() {
         String email = this.emailOublieMdp;
@@ -253,7 +297,8 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Ouvre la page d'inscription
+     * Ouvre la page d'inscription pour créer un nouveau compte.
+     * Ferme la page d'authentification actuelle et affiche la page d'inscription.
      */
     private void traiterCreationCompte() {
         etat = EtatAuthentification.CREATION_COMPTE;
@@ -263,7 +308,11 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Gère une connexion réussie
+     * Gère le succès de la connexion utilisateur.
+     * Affiche un message de bienvenue personnalisé et redirige vers la page principale.
+     * Ferme la page d'authentification.
+     * 
+     * @param usager l'utilisateur authentifié avec succès
      */
     private void connexionReussie(Usager usager) {
         afficherMessage(TITRE_SUCCES,
@@ -278,7 +327,10 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Gère les erreurs de connexion
+     * Gère les erreurs survenues lors du processus de connexion.
+     * Affiche un message d'erreur à l'utilisateur et log l'exception dans la console.
+     * 
+     * @param ex l'exception survenue lors de la connexion
      */
     private void gererErreurConnexion(Exception ex) {
         afficherMessage(TITRE_ERREUR_TECHNIQUE,
@@ -289,7 +341,8 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Réinitialise le champ mot de passe
+     * Réinitialise le champ mot de passe et lui donne le focus.
+     * Utilisé après une tentative de connexion échouée.
      */
     private void reinitialiserChampMotDePasse() {
         vue.txtPassword.setText("");
@@ -297,12 +350,22 @@ public class ControleurAuthentification implements ActionListener {
     }
     
     /**
-     * Affiche un message dans une boîte de dialogue
+     * Affiche un message dans une boîte de dialogue modale.
+     * 
+     * @param titre le titre de la boîte de dialogue
+     * @param message le contenu du message à afficher
+     * @param typeMessage le type de message (INFORMATION, WARNING, ERROR, etc.)
      */
     private void afficherMessage(String titre, String message, int typeMessage) {
         JOptionPane.showMessageDialog(vue, message, titre, typeMessage);
     }
     
+    /**
+     * Retourne l'état actuel du processus d'authentification.
+     * Utile pour le débogage et les tests.
+     * 
+     * @return l'état actuel du contrôleur
+     */
     public EtatAuthentification getEtatCourant() {
         return etat;
     }

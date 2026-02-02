@@ -14,37 +14,60 @@ import java.awt.event.ActionListener;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * Contrôleur gérant la messagerie de feedback entre les utilisateurs et l'administration.
+ * Permet aux utilisateurs de consulter leurs conversations, envoyer de nouveaux messages,
+ * et visualiser les réponses de l'équipe ParkinRose.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Feedback
+ * et les modèles (Feedback, Usager, FeedbackDAO).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurFeedback implements ActionListener, ListSelectionListener {
     
-    // États du contrôleur
+    /**
+     * Énumération des différents états possibles du contrôleur de feedback.
+     * Permet de suivre le cycle de vie de la messagerie et les opérations en cours.
+     */
     private enum Etat {
+        /** État initial au démarrage du contrôleur */
         INITIAL,
+        /** Chargement des informations de l'utilisateur depuis la base de données */
         CHARGEMENT_UTILISATEUR,
+        /** Chargement de la liste des feedbacks de l'utilisateur */
         CHARGEMENT_FEEDBACKS,
+        /** Une conversation a été sélectionnée et ses détails sont affichés */
         CONVERSATION_SELECTIONNEE,
+        /** L'utilisateur est en train de saisir un nouveau message */
         SAISIE_NOUVEAU_MESSAGE,
+        /** Envoi d'un nouveau message en cours */
         ENVOI_MESSAGE,
+        /** Actualisation de la liste des feedbacks en cours */
         ACTUALISATION,
+        /** Redirection vers une autre page en cours */
         REDIRECTION,
+        /** Une erreur s'est produite */
         ERREUR
     }
     
-    // Références
     private Page_Feedback vue;
     private Etat etat;
-    
-    // Données
     private String emailUtilisateur;
     private Usager usager;
     private List<Feedback> feedbacksList;
     private Feedback feedbackSelectionne;
     
-    // Constantes
     private static final int LONGUEUR_MIN_SUJET = 3;
     private static final int LONGUEUR_MIN_MESSAGE = 10;
     private static final int LONGUEUR_MAX_SUJET = 100;
     private static final int LONGUEUR_MAX_MESSAGE = 1000;
     
+    /**
+     * Constructeur du contrôleur de feedback.
+     * Initialise le contrôleur avec la vue associée et charge les données de l'utilisateur.
+     * 
+     * @param vue la page d'interface graphique de feedback
+     */
     public ControleurFeedback(Page_Feedback vue) {
         this.vue = vue;
         this.emailUtilisateur = vue.getEmailUtilisateur();
@@ -53,6 +76,11 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         initialiserControleur();
     }
     
+    /**
+     * Initialise le contrôleur en chargeant les informations utilisateur,
+     * configurant les écouteurs et chargeant les feedbacks existants.
+     * En cas d'erreur, gère l'erreur d'initialisation.
+     */
     private void initialiserControleur() {
         try {
             chargerInformationsUtilisateur();
@@ -64,6 +92,13 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         }
     }
     
+    /**
+     * Charge les informations de l'utilisateur depuis la base de données.
+     * Si l'utilisateur n'est pas trouvé, crée un objet Usager temporaire.
+     * Met à jour l'affichage du nom de l'utilisateur dans la vue.
+     * 
+     * @throws Exception si une erreur survient lors du chargement
+     */
     private void chargerInformationsUtilisateur() throws Exception {
         etat = Etat.CHARGEMENT_UTILISATEUR;
         
@@ -75,26 +110,33 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
             this.usager.setIdUsager(-1);
         }
         
-        // Mettre à jour le label utilisateur dans la vue
         String nomUser = usager.getPrenomUsager() != null ? 
             usager.getPrenomUsager() + " " + usager.getNomUsager() : 
             emailUtilisateur;
         vue.getLblUser().setText(nomUser);
     }
     
+    /**
+     * Configure tous les écouteurs d'événements pour les composants interactifs de la vue.
+     * Connecte les boutons, la table de conversations et le filtre aux actions appropriées.
+     */
     private void configurerListeners() {
-        // Boutons
         vue.getBtnFermer().addActionListener(this);
         vue.getBtnEnvoyerMessage().addActionListener(this);
         vue.getBtnEffacer().addActionListener(this);
         
-        // Table
         vue.getTableFeedbacks().getSelectionModel().addListSelectionListener(this);
         
-        // ComboBox filtre
         vue.getComboFiltre().addActionListener(this);
     }
     
+    /**
+     * Gère les événements d'action des composants de la vue.
+     * Route les actions vers les méthodes appropriées en fonction de l'état actuel
+     * et de la source de l'événement (boutons, filtre).
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
@@ -116,7 +158,6 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
                 
             case ENVOI_MESSAGE:
             case ACTUALISATION:
-                // En cours de traitement
                 break;
                 
             case ERREUR:
@@ -127,6 +168,12 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         }
     }
     
+    /**
+     * Gère les événements de sélection dans la table des conversations.
+     * Affiche les détails de la conversation sélectionnée si l'état le permet.
+     * 
+     * @param e l'événement de sélection
+     */
     @Override
     public void valueChanged(ListSelectionEvent e) {
         if (!e.getValueIsAdjusting() && etat != Etat.ENVOI_MESSAGE && etat != Etat.ACTUALISATION) {
@@ -134,11 +181,15 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         }
     }
     
+    /**
+     * Charge tous les feedbacks de l'utilisateur depuis la base de données
+     * et met à jour l'affichage dans la table.
+     * Affiche un message si aucune conversation n'existe.
+     */
     private void chargerFeedbacks() {
         try {
             feedbacksList = FeedbackDAO.getFeedbacksByUser(usager.getIdUsager());
             
-            // Mettre à jour la vue
             vue.getTableModel().setRowCount(0);
             feedbackSelectionne = null;
             
@@ -163,10 +214,23 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         }
     }
     
+    /**
+     * Retourne l'icône de statut d'un feedback.
+     * 
+     * @param feedback le feedback dont on veut l'icône
+     * @return "✓" si répondu, "●" si en attente
+     */
     private String getIconeStatut(Feedback feedback) {
         return feedback.isRepondu() ? "✓" : "●";
     }
     
+    /**
+     * Génère l'information de conversation formatée en HTML pour affichage dans la table.
+     * Inclut le sujet, le statut et un aperçu du message.
+     * 
+     * @param feedback le feedback dont on veut les informations
+     * @return une chaîne HTML formatée contenant les détails de la conversation
+     */
     private String getConversationInfo(Feedback feedback) {
         String snippet = feedback.getMessage().length() > 70 ? 
             feedback.getMessage().substring(0, 70) + "..." : 
@@ -180,6 +244,13 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
                "<font color='#666666' size='-1'>" + statutTexte + " • " + snippet + "</font></html>";
     }
     
+    /**
+     * Retourne la date et l'heure de la dernière activité d'un feedback formatées en HTML.
+     * Si des réponses existent, retourne la date de la dernière réponse, sinon la date de création.
+     * 
+     * @param feedback le feedback dont on veut la dernière activité
+     * @return une chaîne HTML formatée avec la date et l'heure
+     */
     private String getDerniereActivite(Feedback feedback) {
         List<Feedback> reponses = FeedbackDAO.getReponsesFeedback(feedback.getIdFeedback());
         if (reponses != null && !reponses.isEmpty()) {
@@ -197,12 +268,20 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
                "</font></font></html>";
     }
     
+    /**
+     * Met à jour le label affichant le nombre total de conversations.
+     */
     private void mettreAJourInfoConversation() {
         int total = vue.getTableModel().getRowCount();
         String info = total + " conversation" + (total > 1 ? "s" : "");
         vue.getLblInfoConversation().setText(info);
     }
     
+    /**
+     * Filtre la liste des conversations selon le critère sélectionné dans le ComboBox.
+     * Les filtres disponibles sont : "Toutes mes conversations", "En attente", "Répondu".
+     * Met à jour l'affichage de la table après filtrage.
+     */
     private void filtrerFeedbacks() {
         String filtre = (String) vue.getComboFiltre().getSelectedItem();
         vue.getTableModel().setRowCount(0);
@@ -233,6 +312,11 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         mettreAJourInfoConversation();
     }
     
+    /**
+     * Affiche les détails de la conversation sélectionnée dans la table.
+     * Identifie le feedback correspondant en tenant compte du filtre actif,
+     * puis charge et affiche ses détails complets.
+     */
     private void afficherDetailsConversation() {
         int selectedRow = vue.getTableFeedbacks().getSelectedRow();
         if (selectedRow == -1) {
@@ -240,7 +324,6 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
             return;
         }
         
-        // Trouver le feedback correspondant dans la liste filtrée
         String filtre = (String) vue.getComboFiltre().getSelectedItem();
         int indexFiltre = 0;
         
@@ -276,12 +359,15 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         chargerDetailsConversation();
     }
     
+    /**
+     * Charge et affiche les détails complets de la conversation sélectionnée.
+     * Affiche le message original avec son sujet, sa date et son statut.
+     */
     private void chargerDetailsConversation() {
         if (feedbackSelectionne == null) {
             return;
         }
         
-        // Afficher le message original
         String dateCreation = feedbackSelectionne.getDateCreation().format(
             DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm"));
         
@@ -293,10 +379,14 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
                                          "Statut : " + statutTexte + "\n\n" +
                                          "Votre message :\n" + feedbackSelectionne.getMessage());
         
-        // Charger l'historique
         chargerHistoriqueConversation();
     }
     
+    /**
+     * Charge et affiche l'historique complet des réponses de l'équipe ParkinRose
+     * pour la conversation sélectionnée.
+     * Affiche un message si aucune réponse n'existe encore.
+     */
     private void chargerHistoriqueConversation() {
         List<Feedback> reponses = FeedbackDAO.getReponsesFeedback(feedbackSelectionne.getIdFeedback());
         
@@ -323,6 +413,10 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         vue.getTxtHistorique().setCaretPosition(0);
     }
     
+    /**
+     * Traite l'envoi d'un nouveau message de feedback.
+     * Valide le formulaire avant d'envoyer le message.
+     */
     private void envoyerNouveauMessage() {
         etat = Etat.SAISIE_NOUVEAU_MESSAGE;
         
@@ -334,11 +428,16 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         traiterEnvoiMessage();
     }
     
+    /**
+     * Valide le formulaire de nouveau message.
+     * Vérifie que le sujet et le message respectent les contraintes de longueur minimale et maximale.
+     * 
+     * @return true si le formulaire est valide, false sinon avec affichage d'un message d'erreur
+     */
     private boolean validerFormulaire() {
         String sujet = vue.getTxtSujetNouveau().getText().trim();
         String message = vue.getTxtNouveauMessage().getText().trim();
         
-        // Validation du sujet
         if (sujet.isEmpty()) {
             afficherMessageErreur("Veuillez saisir un sujet.", "Sujet vide");
             return false;
@@ -360,7 +459,6 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
             return false;
         }
         
-        // Validation du message
         if (message.isEmpty()) {
             afficherMessageErreur("Veuillez saisir un message.", "Message vide");
             return false;
@@ -385,6 +483,10 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         return true;
     }
     
+    /**
+     * Traite l'envoi effectif du message validé vers la base de données.
+     * Affiche une confirmation en cas de succès et actualise la liste des feedbacks.
+     */
     private void traiterEnvoiMessage() {
         try {
             String sujet = vue.getTxtSujetNouveau().getText().trim();
@@ -406,6 +508,10 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         }
     }
     
+    /**
+     * Affiche une boîte de dialogue de confirmation après l'envoi réussi d'un message.
+     * Présente un résumé formaté du sujet et du message envoyé.
+     */
     private void afficherConfirmationEnvoi() {
         String message = String.format(
             "<html><div style='text-align: center;'>"
@@ -431,11 +537,18 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         );
     }
     
+    /**
+     * Efface le contenu des champs du formulaire de nouveau message.
+     */
     private void effacerFormulaire() {
         vue.getTxtSujetNouveau().setText("");
         vue.getTxtNouveauMessage().setText("");
     }
     
+    /**
+     * Actualise la liste des feedbacks en rechargeant les données depuis la base de données.
+     * Réinitialise également l'affichage des détails de conversation.
+     */
     private void actualiserFeedbacks() {
         etat = Etat.ACTUALISATION;
         chargerFeedbacks();
@@ -444,6 +557,10 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         etat = Etat.CHARGEMENT_FEEDBACKS;
     }
     
+    /**
+     * Gère la fermeture de la page de feedback.
+     * Demande confirmation à l'utilisateur avant de fermer.
+     */
     private void fermerPage() {
         etat = Etat.REDIRECTION;
         
@@ -462,36 +579,67 @@ public class ControleurFeedback implements ActionListener, ListSelectionListener
         }
     }
     
+    /**
+     * Ferme la page de feedback et retourne à la page précédente.
+     */
     private void retourPagePrincipale() {
         try {
-            // Fermer la page feedback seulement
             vue.dispose();
         } catch (Exception e) {
             gererErreur("Erreur fermeture: " + e.getMessage());
         }
     }
     
+    /**
+     * Affiche un message d'erreur dans une boîte de dialogue.
+     * 
+     * @param message le message d'erreur à afficher
+     * @param titre le titre de la boîte de dialogue
+     */
     private void afficherMessageErreur(String message, String titre) {
         JOptionPane.showMessageDialog(vue, message, titre, JOptionPane.ERROR_MESSAGE);
     }
     
+    /**
+     * Gère une erreur survenue pendant l'utilisation du contrôleur.
+     * Affiche un message d'erreur et passe à l'état ERREUR.
+     * 
+     * @param message la description de l'erreur
+     */
     private void gererErreur(String message) {
         System.err.println(message);
         afficherMessageErreur(message, "Erreur");
         etat = Etat.ERREUR;
     }
     
+    /**
+     * Gère une erreur critique survenue lors de l'initialisation.
+     * Affiche un message d'erreur et ferme la page.
+     * 
+     * @param message la description de l'erreur d'initialisation
+     */
     private void gererErreurInitialisation(String message) {
         System.err.println("Erreur initialisation: " + message);
         afficherMessageErreur(message, "Erreur d'initialisation");
         vue.dispose();
     }
     
-    // Getters pour débogage
+    /**
+     * Retourne l'état actuel du contrôleur.
+     * Utile pour le débogage et les tests.
+     * 
+     * @return l'état actuel du contrôleur
+     */
     public Etat getEtat() {
         return etat;
     }
     
+    /**
+     * Retourne l'utilisateur connecté.
+     * Utile pour le débogage et les tests.
+     * 
+     * @return l'utilisateur connecté
+     */
     public Usager getUsager() {
         return usager;
     }

@@ -8,27 +8,51 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+/**
+ * Contrôleur gérant le processus d'inscription des nouveaux utilisateurs.
+ * Valide les données saisies (nom, prénom, email, mot de passe), vérifie que l'email
+ * n'est pas déjà utilisé, crée le compte dans la base de données et redirige vers
+ * la page d'authentification en cas de succès.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Inscription
+ * et le modèle (Usager, UsagerDAO).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurInscription implements ActionListener {
     
-    // États du contrôleur
+    /**
+     * Énumération des différents états possibles du processus d'inscription.
+     * Permet de suivre le cycle de vie de la création d'un compte utilisateur.
+     */
     private enum Etat {
+        /** L'utilisateur est en train de saisir ses informations */
         SAISIE,
+        /** Validation des champs du formulaire en cours */
         VALIDATION_CHAMPS,
+        /** Vérification de la disponibilité de l'email en cours */
         VERIFICATION_EMAIL,
+        /** Création du compte dans la base de données en cours */
         CREATION_COMPTE,
+        /** Le compte a été créé avec succès */
         REUSSITE,
+        /** Retour à la page d'authentification */
         RETOUR,
+        /** Une erreur s'est produite */
         ERREUR
     }
     
-    // Références
     private Page_Inscription vue;
     private Etat etat;
     
-    // Constantes
     private static final String TITRE_ERREUR = "Erreur";
     private static final String TITRE_SUCCES = "Succès";
     
+    /**
+     * Constructeur du contrôleur d'inscription.
+     * Initialise le contrôleur avec la vue associée et configure les écouteurs.
+     * 
+     * @param vue la page d'interface graphique d'inscription
+     */
     public ControleurInscription(Page_Inscription vue) {
         this.vue = vue;
         this.etat = Etat.SAISIE;
@@ -36,16 +60,21 @@ public class ControleurInscription implements ActionListener {
         initialiserControleur();
     }
     
+    /**
+     * Initialise le contrôleur en configurant les écouteurs d'événements.
+     */
     private void initialiserControleur() {
         configurerListeners();
     }
     
+    /**
+     * Configure tous les écouteurs d'événements pour les composants interactifs de la vue.
+     * Connecte les boutons et les champs de texte pour permettre la validation par Entrée.
+     */
     private void configurerListeners() {
-        // Boutons principaux
         vue.getBtnRetour().addActionListener(this);
         vue.getBtnCreerCompte().addActionListener(this);
         
-        // Entrée dans les champs de texte
         vue.getTextFieldNom().addActionListener(this);
         vue.getTextFieldPrenom().addActionListener(this);
         vue.getTextFieldEmail().addActionListener(this);
@@ -53,6 +82,13 @@ public class ControleurInscription implements ActionListener {
         vue.getPasswordFieldConfirm().addActionListener(this);
     }
     
+    /**
+     * Gère les événements d'action des composants de la vue.
+     * Route les actions vers les méthodes appropriées en fonction de l'état actuel
+     * et de la source de l'événement.
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
@@ -74,15 +110,12 @@ public class ControleurInscription implements ActionListener {
             case VALIDATION_CHAMPS:
             case VERIFICATION_EMAIL:
             case CREATION_COMPTE:
-                // En cours de traitement, aucune action possible
                 break;
                 
             case REUSSITE:
-                // Le succès est géré dans la méthode afficherSucces()
                 break;
                 
             case ERREUR:
-                // En état d'erreur, seul le retour est possible
                 if (source == vue.getBtnRetour()) {
                     retourAuthentification();
                 }
@@ -90,17 +123,20 @@ public class ControleurInscription implements ActionListener {
         }
     }
     
+    /**
+     * Lance le processus complet de création de compte utilisateur.
+     * Enchaîne les étapes de validation des champs, vérification de l'email
+     * et création effective du compte si toutes les validations passent.
+     */
     private void lancerCreationCompte() {
         etat = Etat.VALIDATION_CHAMPS;
         
-        // Récupérer les valeurs
         String nom = vue.getTextFieldNom().getText().trim();
         String prenom = vue.getTextFieldPrenom().getText().trim();
         String email = vue.getTextFieldEmail().getText().trim();
         String motDePasse = new String(vue.getPasswordField().getPassword());
         String confirmation = new String(vue.getPasswordFieldConfirm().getPassword());
         
-        // Validation
         if (!validerChamps(nom, prenom, email, motDePasse, confirmation)) {
             etat = Etat.SAISIE;
             return;
@@ -116,10 +152,22 @@ public class ControleurInscription implements ActionListener {
         creerCompteUtilisateur(nom, prenom, email, motDePasse);
     }
     
+    /**
+     * Valide tous les champs du formulaire d'inscription.
+     * Vérifie que tous les champs sont remplis, que les mots de passe correspondent,
+     * que le mot de passe a une longueur minimale de 4 caractères et que l'email
+     * a un format valide.
+     * 
+     * @param nom le nom de l'utilisateur
+     * @param prenom le prénom de l'utilisateur
+     * @param email l'adresse email
+     * @param motDePasse le mot de passe saisi
+     * @param confirmation la confirmation du mot de passe
+     * @return true si tous les champs sont valides, false sinon avec affichage d'erreur
+     */
     private boolean validerChamps(String nom, String prenom, String email, 
                                  String motDePasse, String confirmation) {
         
-        // Vérification des champs vides
         if (nom.isEmpty() || prenom.isEmpty() || email.isEmpty() || 
             motDePasse.isEmpty() || confirmation.isEmpty()) {
             
@@ -127,21 +175,18 @@ public class ControleurInscription implements ActionListener {
             return false;
         }
         
-        // Vérification de la correspondance des mots de passe
         if (!motDePasse.equals(confirmation)) {
             afficherErreur("Les mots de passe ne correspondent pas");
             reinitialiserMotsDePasse();
             return false;
         }
         
-        // Vérification de la longueur du mot de passe
         if (motDePasse.length() < 4) {
             afficherErreur("Le mot de passe doit contenir au moins 4 caractères");
             reinitialiserMotsDePasse();
             return false;
         }
         
-        // Validation du format de l'email
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
         if (!email.matches(emailRegex)) {
             afficherErreur("Veuillez saisir un email valide");
@@ -152,6 +197,12 @@ public class ControleurInscription implements ActionListener {
         return true;
     }
     
+    /**
+     * Vérifie que l'adresse email n'est pas déjà utilisée par un autre compte.
+     * 
+     * @param email l'adresse email à vérifier
+     * @return true si l'email est disponible, false s'il est déjà utilisé
+     */
     private boolean verifierEmail(String email) {
         if (UsagerDAO.emailExisteDeja(email)) {
             afficherErreur("Cet email est déjà utilisé");
@@ -162,6 +213,16 @@ public class ControleurInscription implements ActionListener {
         return true;
     }
     
+    /**
+     * Crée un nouveau compte utilisateur dans la base de données avec les informations fournies.
+     * Le compte est créé sans droits d'administration par défaut.
+     * Affiche un message de succès ou d'erreur selon le résultat.
+     * 
+     * @param nom le nom de l'utilisateur
+     * @param prenom le prénom de l'utilisateur
+     * @param email l'adresse email
+     * @param motDePasse le mot de passe
+     */
     private void creerCompteUtilisateur(String nom, String prenom, String email, String motDePasse) {
         try {
             Usager nouvelUsager = new Usager(nom, prenom, email, motDePasse);
@@ -182,6 +243,10 @@ public class ControleurInscription implements ActionListener {
         }
     }
     
+    /**
+     * Affiche un message de succès après la création du compte et propose
+     * de retourner à la page de connexion ou de créer un autre compte.
+     */
     private void afficherSucces() {
         JOptionPane.showMessageDialog(vue, 
             "Compte créé avec succès !", 
@@ -202,6 +267,10 @@ public class ControleurInscription implements ActionListener {
         }
     }
     
+    /**
+     * Réinitialise tous les champs du formulaire d'inscription et place
+     * le focus sur le champ du nom.
+     */
     private void reinitialiserFormulaire() {
         vue.getTextFieldNom().setText("");
         vue.getTextFieldPrenom().setText("");
@@ -210,12 +279,19 @@ public class ControleurInscription implements ActionListener {
         vue.getTextFieldNom().requestFocus();
     }
     
+    /**
+     * Réinitialise uniquement les champs de mot de passe et de confirmation,
+     * et place le focus sur le champ du mot de passe.
+     */
     private void reinitialiserMotsDePasse() {
         vue.getPasswordField().setText("");
         vue.getPasswordFieldConfirm().setText("");
         vue.getPasswordField().requestFocus();
     }
     
+    /**
+     * Retourne à la page d'authentification et ferme la page d'inscription.
+     */
     private void retourAuthentification() {
         etat = Etat.RETOUR;
         Page_Authentification pageAuthentification = new Page_Authentification();
@@ -223,6 +299,11 @@ public class ControleurInscription implements ActionListener {
         vue.dispose();
     }
     
+    /**
+     * Affiche un message d'erreur dans une boîte de dialogue.
+     * 
+     * @param message le message d'erreur à afficher
+     */
     private void afficherErreur(String message) {
         JOptionPane.showMessageDialog(vue, 
             message, 
@@ -230,13 +311,25 @@ public class ControleurInscription implements ActionListener {
             JOptionPane.ERROR_MESSAGE);
     }
     
+    /**
+     * Gère une erreur survenue pendant le processus d'inscription.
+     * Affiche un message d'erreur et passe à l'état ERREUR.
+     * 
+     * @param titre le titre du message d'erreur
+     * @param message la description détaillée de l'erreur
+     */
     private void gererErreur(String titre, String message) {
         System.err.println(titre + ": " + message);
         afficherErreur(titre + ": " + message);
         etat = Etat.ERREUR;
     }
     
-    // Getters pour débogage
+    /**
+     * Retourne l'état actuel du contrôleur.
+     * Utile pour le débogage et les tests.
+     * 
+     * @return l'état actuel du processus d'inscription
+     */
     public Etat getEtat() {
         return etat;
     }
