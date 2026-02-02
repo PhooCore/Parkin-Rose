@@ -12,6 +12,7 @@ import modele.dao.FavoriDAO;
 import modele.dao.ParkingDAO;
 import modele.dao.TarifParkingDAO;
 import modele.dao.UsagerDAO;
+import controleur.ControleurFavoris;
 import controleur.ControleurResultatsRecherche;
 
 public class Page_Resultats_Recherche extends JFrame {
@@ -624,41 +625,30 @@ public class Page_Resultats_Recherche extends JFrame {
 
     private JButton creerBoutonCoeur(Parking parking) {
         JButton btnCoeur = new JButton();
-
-        boolean estFavori = false;
-        try {
-            estFavori = FavoriDAO.getInstance()
-                    .estFavori(idUsager, parking.getIdParking());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
+        
+        // Créer un contrôleur local pour gérer ce favori
+        ControleurFavoris controleurFav = new ControleurFavoris(null, idUsager);
+        
+        // Vérifier l'état initial
+        boolean estFavori = controleurFav.estFavori(parking.getIdParking());
         btnCoeur.setIcon(estFavori ? COEUR_REMPLI : COEUR_VIDE);
-
+        
         btnCoeur.setBorderPainted(false);
         btnCoeur.setContentAreaFilled(false);
         btnCoeur.setFocusPainted(false);
         btnCoeur.setOpaque(false);
         btnCoeur.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCoeur.setPreferredSize(new Dimension(32, 32));
-
+        
+        // UTILISER LE CONTRÔLEUR pour basculer le favori
         btnCoeur.addActionListener(e -> {
-            try {
-                if (FavoriDAO.getInstance()
-                        .estFavori(idUsager, parking.getIdParking())) {
-
-                    FavoriDAO.getInstance()
-                            .supprimerFavori(idUsager, parking.getIdParking());
-                    btnCoeur.setIcon(COEUR_VIDE);
-
-                } else {
-
-                    FavoriDAO.getInstance()
-                            .ajouterFavori(idUsager, parking.getIdParking());
-                    btnCoeur.setIcon(COEUR_REMPLI);
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            boolean succes = controleurFav.basculerFavori(parking.getIdParking());
+            
+            if (succes) {
+                // Mettre à jour l'icône
+                boolean nouveauEtat = controleurFav.estFavori(parking.getIdParking());
+                btnCoeur.setIcon(nouveauEtat ? COEUR_REMPLI : COEUR_VIDE);
+            } else {
                 JOptionPane.showMessageDialog(
                     this,
                     "Erreur lors de la gestion des favoris",
@@ -667,13 +657,10 @@ public class Page_Resultats_Recherche extends JFrame {
                 );
             }
         });
-
+        
         return btnCoeur;
     }
 
-
-
-    
     
     /**
      * Reconfigure les listeners après mise à jour de l'interface

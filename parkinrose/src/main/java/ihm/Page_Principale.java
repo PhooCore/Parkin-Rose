@@ -281,9 +281,9 @@ public class Page_Principale extends JFrame {
         btnFavoris.setPreferredSize(new Dimension(140, 70));
         btnFavoris.addActionListener(e -> ouvrirPageFavoris());
         //icone coeur favoris
-        JLabel lblIconeFavoris = chargerIconeLabel("/images/coeurRempli.png", 40, 40, "P");
+        JLabel lblIconeFavoris = chargerIconeLabel("/images/coeurRempli.png", 40, 40, "F");
         JLabel lblTexteFavoris = new JLabel("Favoris", SwingConstants.CENTER);
-        lblIconeFavoris.setFont(new Font("Arial", Font.PLAIN, 12));
+        lblTexteFavoris.setFont(new Font("Arial", Font.PLAIN, 12));
         lblTexteFavoris.setForeground(Color.DARK_GRAY);
         
         btnFavoris.add(lblIconeFavoris, BorderLayout.CENTER);
