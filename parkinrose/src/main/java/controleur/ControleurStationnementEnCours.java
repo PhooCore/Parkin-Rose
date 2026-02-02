@@ -9,14 +9,32 @@ import java.awt.event.ActionListener;
 import javax.swing.Timer;
 import javax.swing.JOptionPane;
 
+/**
+ * Contrôleur gérant l'interface de consultation d'un stationnement en cours.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Stationnement_En_Cours
+ * et le modèle (Stationnement).
+ * Gère l'actualisation automatique des données et les notifications de fin de stationnement.
+ * 
+ * @author Équipe 7
+ */
 public class ControleurStationnementEnCours implements ActionListener {
     
+    /**
+     * Énumération des différents états possibles du contrôleur.
+     * Permet de suivre le cycle de vie de la consultation du stationnement.
+     */
     private enum EtatStationnement {
+        /** État initial au démarrage du contrôleur */
         INITIAL,
+        /** Affichage des informations du stationnement en cours */
         AFFICHAGE_EN_COURS,
+        /** Retour à la page principale en cours */
         RETOUR_EN_COURS,
+        /** Chargement des données du stationnement */
         CHARGEMENT_DONNEES,
+        /** Vérification de l'état du stationnement */
         VERIFICATION_EN_COURS,
+        /** Terminaison du stationnement en cours */
         TERMINAISON_EN_COURS
     }
     
@@ -25,6 +43,12 @@ public class ControleurStationnementEnCours implements ActionListener {
     private Timer timer;
     private NotificationManager notificationManager;
     
+    /**
+     * Constructeur du contrôleur de stationnement en cours.
+     * Initialise le contrôleur avec la vue associée et démarre l'actualisation automatique.
+     * 
+     * @param vue la page d'interface graphique du stationnement en cours
+     */
     public ControleurStationnementEnCours(Page_Stationnement_En_Cours vue) {
         this.vue = vue;
         this.etat = EtatStationnement.INITIAL;
@@ -34,18 +58,22 @@ public class ControleurStationnementEnCours implements ActionListener {
         etat = EtatStationnement.AFFICHAGE_EN_COURS;
         demarrerTimer();
         
-        // Vérifier immédiatement les notifications
         verifierNotifications();
     }
     
+    /**
+     * Configure les écouteurs d'événements pour les composants de la vue.
+     * Recherche et configure les boutons "Retour" et "Arrêter".
+     */
     private void configurerListeners() {
         rechercherBoutonRetour(vue.getContentPane());
-        
-        // Le bouton "Arrêter" est déjà configuré dans la vue
-        // On peut ajouter un listener si nécessaire :
         ajouterListenerBoutonArreter();
     }
     
+    /**
+     * Ajoute un écouteur au bouton "Arrêter le stationnement".
+     * Recherche le bouton dans les composants de la vue.
+     */
     private void ajouterListenerBoutonArreter() {
         try {
             for (java.awt.Component comp : vue.getContentPane().getComponents()) {
@@ -62,6 +90,11 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Gère les événements d'action en fonction de l'état courant du contrôleur.
+     * 
+     * @param e l'événement d'action
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         String action = obtenirAction(e);
@@ -93,6 +126,13 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Détermine l'action à partir de la source de l'événement.
+     * Identifie si c'est un bouton, un timer ou une autre source.
+     * 
+     * @param e l'événement d'action
+     * @return une chaîne identifiant l'action
+     */
     private String obtenirAction(ActionEvent e) {
         Object source = e.getSource();
         
@@ -114,13 +154,23 @@ public class ControleurStationnementEnCours implements ActionListener {
         return e.getActionCommand();
     }
     
+    /**
+     * Traite les actions en état INITIAL.
+     * 
+     * @param action l'action à traiter
+     */
     private void traiterEtatInitial(String action) {
-        // État initial, seulement pour l'initialisation
         if (action.equals("INITIALISATION_COMPLETE")) {
             etat = EtatStationnement.AFFICHAGE_EN_COURS;
         }
     }
     
+    /**
+     * Traite les actions en état AFFICHAGE_EN_COURS.
+     * Gère le retour, l'arrêt et l'actualisation automatique.
+     * 
+     * @param action l'action à traiter
+     */
     private void traiterEtatAffichageEnCours(String action) {
         switch (action) {
             case "RETOUR":
@@ -140,15 +190,23 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Traite les actions en état RETOUR_EN_COURS.
+     * 
+     * @param action l'action à traiter
+     */
     private void traiterEtatRetourEnCours(String action) {
-        // En cours de retour à l'accueil
         if (action.equals("ANNULER_RETOUR")) {
             etat = EtatStationnement.AFFICHAGE_EN_COURS;
         }
     }
     
+    /**
+     * Traite les actions en état CHARGEMENT_DONNEES.
+     * 
+     * @param action l'action à traiter
+     */
     private void traiterEtatChargementDonnees(String action) {
-        // En cours de chargement des données
         if (action.equals("DONNEES_CHARGEES")) {
             etat = EtatStationnement.VERIFICATION_EN_COURS;
             verifierStationnement();
@@ -158,8 +216,12 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Traite les actions en état VERIFICATION_EN_COURS.
+     * 
+     * @param action l'action à traiter
+     */
     private void traiterEtatVerificationEnCours(String action) {
-        // En cours de vérification du stationnement
         if (action.equals("STATIONNEMENT_ACTIF")) {
             etat = EtatStationnement.AFFICHAGE_EN_COURS;
             rafraichirAffichage();
@@ -169,16 +231,23 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Traite les actions en état TERMINAISON_EN_COURS.
+     * 
+     * @param action l'action à traiter
+     */
     private void traiterEtatTerminaisonEnCours(String action) {
-        // En cours de terminaison du stationnement
         if (action.equals("TERMINAISON_CONFIRMEE")) {
-            // La terminaison est gérée par la vue
             etat = EtatStationnement.AFFICHAGE_EN_COURS;
         } else if (action.equals("ANNULER_TERMINAISON")) {
             etat = EtatStationnement.AFFICHAGE_EN_COURS;
         }
     }
     
+    /**
+     * Retourne à la page d'accueil de l'application.
+     * Arrête le timer d'actualisation et ferme la page actuelle.
+     */
     private void retourAccueil() {
         arreterTimer();
         
@@ -192,17 +261,22 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Termine le stationnement en cours.
+     * La logique de terminaison est implémentée dans la vue.
+     */
     private void terminerStationnement() {
-        // La logique de terminaison est déjà implémentée dans la vue
-        // On pourrait ici ajouter des vérifications supplémentaires
         etat = EtatStationnement.AFFICHAGE_EN_COURS;
     }
     
+    /**
+     * Actualise les données du stationnement en cours.
+     * Recharge le stationnement depuis la base de données et vérifie les notifications.
+     */
     private void actualiserDonnees() {
         try {
             vue.chargerStationnementActif();
             
-            // Vérifier les notifications
             if (vue.getStationnementActif() != null) {
                 notificationManager.verifierStationnement(vue.getStationnementActif());
             }
@@ -214,6 +288,10 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Vérifie l'état du stationnement actuel.
+     * Déclenche l'événement approprié selon que le stationnement existe ou non.
+     */
     private void verifierStationnement() {
         try {
             if (vue.getStationnementActif() == null) {
@@ -227,12 +305,20 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Vérifie les notifications liées au stationnement.
+     * Utilisé au démarrage pour alerter l'utilisateur si nécessaire.
+     */
     private void verifierNotifications() {
         if (vue.getStationnementActif() != null) {
             notificationManager.verifierStationnement(vue.getStationnementActif());
         }
     }
     
+    /**
+     * Rafraîchit l'affichage des informations du stationnement.
+     * Appelle la méthode d'affichage de la vue.
+     */
     private void rafraichirAffichage() {
         try {
             vue.afficherInformationsStationnement();
@@ -241,7 +327,9 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
-    
+    /**
+     * Affiche un message d'erreur lors du chargement des données.
+     */
     private void afficherErreurChargement() {
         JOptionPane.showMessageDialog(vue, 
             "Erreur lors du chargement des données.", 
@@ -249,12 +337,20 @@ public class ControleurStationnementEnCours implements ActionListener {
             JOptionPane.ERROR_MESSAGE);
     }
     
+    /**
+     * Démarre le timer d'actualisation automatique.
+     * Le timer déclenche une actualisation toutes les 30 secondes.
+     */
     private void demarrerTimer() {
         timer = new Timer(30000, e -> 
             actionPerformed(new ActionEvent(timer, ActionEvent.ACTION_PERFORMED, "ACTUALISATION_TIMER")));
         timer.start();
     }
     
+    /**
+     * Arrête le timer d'actualisation.
+     * Utilisé lors du retour à la page principale.
+     */
     private void arreterTimer() {
         if (timer != null) {
             timer.stop();
@@ -262,6 +358,12 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
+    /**
+     * Recherche et configure le bouton "Retour" dans le conteneur.
+     * Méthode récursive qui parcourt tous les composants.
+     * 
+     * @param container le conteneur à parcourir
+     */
     private void rechercherBoutonRetour(java.awt.Container container) {
         for (java.awt.Component comp : container.getComponents()) {
             if (comp instanceof JButton) {
@@ -278,12 +380,19 @@ public class ControleurStationnementEnCours implements ActionListener {
         }
     }
     
-    // Méthodes pour la gestion des états
-    
+    /**
+     * Retourne l'état actuel du contrôleur.
+     * 
+     * @return l'état actuel
+     */
     public EtatStationnement getEtat() {
         return etat;
     }
     
+    /**
+     * Nettoie les ressources utilisées par le contrôleur.
+     * Arrête le timer d'actualisation.
+     */
     public void nettoyer() {
         arreterTimer();
     }

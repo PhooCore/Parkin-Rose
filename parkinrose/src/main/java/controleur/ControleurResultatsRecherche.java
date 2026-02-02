@@ -18,42 +18,62 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Contrôleur gérant l'interface des résultats de recherche de parkings.
+ * Implémente le pattern MVC en coordonnant les interactions entre la vue Page_Resultats_Recherche
+ * et le modèle (Parking, Usager, TarifParking).
+ * Gère le filtrage, la sélection de parkings et les vérifications d'accès (carte Tisséo).
+ * 
+ * @author Équipe 7
+ */
 public class ControleurResultatsRecherche implements ActionListener {
     
-    // États possibles du contrôleur
+    /**
+     * Énumération des différents états possibles du contrôleur.
+     * Permet de suivre le processus de sélection d'un parking et de gestion des accès.
+     */
     public enum EtatResultats {
+        /** Affichage des résultats de recherche */
         AFFICHAGE_RESULTATS,
+        /** Application des filtres en cours */
         FILTRAGE_EN_COURS,
+        /** Un parking a été sélectionné */
         SELECTION_PARKING,
+        /** Vérification de l'accès au parking (carte Tisséo) */
         VERIFICATION_ACCES,
+        /** Demande de confirmation pour le stationnement */
         DEMANDE_CONFIRMATION,
+        /** Ouverture de la page de stationnement */
         STATIONNEMENT_EN_COURS,
+        /** Retour à la page d'accueil */
         RETOUR_ACCUEIL,
+        /** Affichage de tous les parkings */
         AFFICHAGE_TOUS_PARKINGS
     }
     
-    // Constantes pour les actions
     private static final String ACTION_RETOUR = "RETOUR";
     private static final String ACTION_TOUS_PARKINGS = "TOUS_PARKINGS";
     private static final String ACTION_STATIONNER_PREFIX = "STATIONNER_";
     private static final String ACTION_FILTRE_COMBO = "FILTRE_COMBO";
     private static final String ACTION_FILTRE_CHECKBOX = "FILTRE_CHECKBOX";
     
-    // Messages
     private static final String TITRE_ERREUR = "Erreur";
     private static final String TITRE_SYSTEME = "Erreur système";
     private static final String TITRE_CARTE_TISSEO = "Carte Tisséo requise";
     private static final String TITRE_ACCES_REFUSE = "Accès refusé - Parking réservé";
     private static final String TITRE_CONFIRMATION = "Confirmation";
     
-    // Composants
     private final Page_Resultats_Recherche vue;
     private EtatResultats etat;
-    
-    // Variables temporaires pour le processus en cours
     private Parking parkingSelectionne;
     private int indexParkingSelectionne;
     
+    /**
+     * Constructeur du contrôleur des résultats de recherche.
+     * Initialise le contrôleur avec la vue associée.
+     * 
+     * @param vue la page d'interface graphique des résultats de recherche
+     */
     public ControleurResultatsRecherche(Page_Resultats_Recherche vue) {
         this.vue = vue;
         this.etat = EtatResultats.AFFICHAGE_RESULTATS;
@@ -62,14 +82,14 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Initialise le contrôleur
+     * Initialise le contrôleur en configurant les écouteurs d'événements.
      */
     private void initialiserControleur() {
         configurerListeners();
     }
     
     /**
-     * Configure les écouteurs d'événements
+     * Configure tous les écouteurs d'événements pour les composants de la vue.
      */
     private void configurerListeners() {
         configurerListenersFiltres();
@@ -77,11 +97,11 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Configure les écouteurs pour les filtres
+     * Configure les écouteurs pour les composants de filtrage (combo box et cases à cocher).
+     * Utilise la réflexion pour accéder aux composants privés de la vue.
      */
     private void configurerListenersFiltres() {
         try {
-            // Accès par réflexion aux composants
             java.lang.reflect.Field comboField = vue.getClass().getDeclaredField("comboFiltres");
             comboField.setAccessible(true);
             JComboBox<String> combo = (JComboBox<String>) comboField.get(vue);
@@ -106,21 +126,25 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Configure les écouteurs pour les boutons
+     * Configure les écouteurs pour tous les boutons de la vue.
      */
     private void configurerListenersBoutons() {
         configurerListenersRecursifs(vue.getContentPane());
     }
     
     /**
-     * Reconfigure les listeners après filtrage
+     * Reconfigure les listeners après un filtrage.
+     * Nécessaire car de nouveaux boutons sont créés dynamiquement.
      */
     public void configurerListenersApresFiltrage() {
         configurerListenersBoutons();
     }
     
     /**
-     * Configure les écouteurs de manière récursive
+     * Configure les écouteurs de manière récursive dans un conteneur.
+     * Parcourt tous les composants pour trouver les boutons à configurer.
+     * 
+     * @param container le conteneur à parcourir
      */
     private void configurerListenersRecursifs(java.awt.Container container) {
         for (java.awt.Component comp : container.getComponents()) {
@@ -138,7 +162,10 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Configure l'écouteur pour un bouton spécifique
+     * Configure l'écouteur pour un bouton spécifique.
+     * Vérifie d'abord si le bouton n'a pas déjà ce contrôleur comme écouteur.
+     * 
+     * @param button le bouton à configurer
      */
     private void configurerListenerBouton(JButton button) {
         if (!estBoutonDejaConfigure(button)) {
@@ -147,7 +174,11 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Vérifie si un bouton a déjà ce contrôleur comme écouteur
+     * Vérifie si un bouton a déjà ce contrôleur comme écouteur.
+     * Évite l'ajout de listeners en double.
+     * 
+     * @param button le bouton à vérifier
+     * @return true si le bouton est déjà configuré, false sinon
      */
     private boolean estBoutonDejaConfigure(JButton button) {
         for (ActionListener listener : button.getActionListeners()) {
@@ -159,20 +190,20 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Gère les événements d'action
+     * Gère les événements d'action en fonction de l'état courant du contrôleur.
+     * 
+     * @param e l'événement d'action
      */
     @Override
     public void actionPerformed(ActionEvent e) {
         String action = e.getActionCommand();
         
-        // Traiter selon l'état courant
         switch (etat) {
             case AFFICHAGE_RESULTATS:
                 traiterActionAffichage(action, e);
                 break;
                 
             case FILTRAGE_EN_COURS:
-                // En cours de filtrage, ignorer les autres actions
                 break;
                 
             case SELECTION_PARKING:
@@ -198,19 +229,18 @@ public class ControleurResultatsRecherche implements ActionListener {
                 break;
                 
             case STATIONNEMENT_EN_COURS:
-                // En cours d'ouverture de stationnement
-                break;
-                
             case RETOUR_ACCUEIL:
-                // En cours de retour à l'accueil
-                break;
-                
             case AFFICHAGE_TOUS_PARKINGS:
-                // En cours d'affichage de tous les parkings
                 break;
         }
     }
     
+    /**
+     * Traite les actions en état d'affichage des résultats.
+     * 
+     * @param action l'action à traiter
+     * @param e l'événement d'action
+     */
     private void traiterActionAffichage(String action, ActionEvent e) {
         switch (action) {
             case ACTION_FILTRE_COMBO:
@@ -235,7 +265,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Applique les filtres
+     * Applique les filtres sélectionnés par l'utilisateur.
+     * Appelle la méthode de filtrage de la vue puis reconfigure les listeners.
      */
     private void appliquerFiltres() {
         etat = EtatResultats.FILTRAGE_EN_COURS;
@@ -244,7 +275,6 @@ public class ControleurResultatsRecherche implements ActionListener {
             Method method = vue.getClass().getMethod("appliquerFiltres");
             method.invoke(vue);
             
-            // Reconfigurer les listeners après filtrage
             configurerListenersApresFiltrage();
         } catch (Exception e) {
             System.err.println("Erreur lors de l'appel de appliquerFiltres: " + e.getMessage());
@@ -254,7 +284,10 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Sélectionne un parking
+     * Gère la sélection d'un parking par l'utilisateur.
+     * Extrait l'index du parking et déclenche la vérification d'accessibilité.
+     * 
+     * @param action l'action contenant l'index du parking
      */
     private void selectionnerParking(String action) {
         etat = EtatResultats.SELECTION_PARKING;
@@ -279,14 +312,20 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Extrait l'index du parking de l'action
+     * Extrait l'index du parking de la commande d'action.
+     * 
+     * @param action la commande d'action
+     * @return l'index du parking
      */
     private int extraireIndexParking(String action) {
         return Integer.parseInt(action.replace(ACTION_STATIONNER_PREFIX, ""));
     }
     
     /**
-     * Obtient la liste des parkings filtrés
+     * Obtient la liste des parkings filtrés depuis la vue.
+     * Utilise la réflexion pour accéder au champ privé.
+     * 
+     * @return la liste des parkings filtrés
      */
     private List<Parking> obtenirParkingsFiltres() {
         try {
@@ -300,14 +339,19 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Vérifie si l'index est valide
+     * Vérifie si un index est valide pour la liste de parkings.
+     * 
+     * @param index l'index à vérifier
+     * @param parkingsFiltres la liste des parkings
+     * @return true si l'index est valide, false sinon
      */
     private boolean estIndexValide(int index, List<Parking> parkingsFiltres) {
         return index >= 0 && index < parkingsFiltres.size();
     }
     
     /**
-     * Vérifie l'accessibilité du parking
+     * Vérifie l'accessibilité du parking sélectionné.
+     * Pour les parkings relais, vérifie que l'utilisateur possède une carte Tisséo.
      */
     private void verifierAccessibiliteParking() {
         etat = EtatResultats.VERIFICATION_ACCES;
@@ -328,7 +372,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Vérifie la carte Tisséo pour les parkings relais
+     * Vérifie la présence d'une carte Tisséo pour l'utilisateur.
+     * Si absente, affiche un message d'accès refusé.
      */
     private void verifierCarteTisseo() {
         String carteTisseo = obtenirCarteTisseoUtilisateur();
@@ -342,7 +387,9 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Obtient la carte Tisséo de l'utilisateur
+     * Obtient le numéro de carte Tisséo de l'utilisateur depuis la base de données.
+     * 
+     * @return le numéro de carte Tisséo ou null si absent
      */
     private String obtenirCarteTisseoUtilisateur() {
         try {
@@ -360,7 +407,10 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Obtient l'email de l'utilisateur
+     * Obtient l'email de l'utilisateur depuis la vue.
+     * Utilise la réflexion pour appeler la méthode.
+     * 
+     * @return l'email de l'utilisateur
      */
     private String obtenirEmailUtilisateur() {
         try {
@@ -373,7 +423,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Affiche le message d'accès refusé pour les parkings relais
+     * Affiche un message d'accès refusé pour un parking relais sans carte Tisséo.
+     * Propose à l'utilisateur d'ajouter une carte Tisséo.
      */
     private void afficherMessageAccesRefuse() {
         Object[] options = {"Ajouter une carte Tisséo", "Annuler"};
@@ -409,7 +460,7 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Ajoute une carte Tisséo (ouvre la page utilisateur)
+     * Ouvre la page utilisateur pour permettre l'ajout d'une carte Tisséo.
      */
     private void ajouterCarteTisseo() {
         try {
@@ -426,7 +477,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Demande confirmation pour le stationnement
+     * Demande confirmation à l'utilisateur pour le stationnement.
+     * Affiche les informations du parking et de la carte Tisséo si applicable.
      */
     private void demanderConfirmationStationnement() {
         String message = construireMessageConfirmation(parkingSelectionne);
@@ -449,7 +501,11 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Construit le message de confirmation
+     * Construit le message de confirmation pour le stationnement.
+     * Inclut les informations sur le parking et la carte Tisséo si c'est un parking relais.
+     * 
+     * @param parking le parking sélectionné
+     * @return le message de confirmation
      */
     private String construireMessageConfirmation(Parking parking) {
         StringBuilder message = new StringBuilder();
@@ -481,14 +537,17 @@ public class ControleurResultatsRecherche implements ActionListener {
                 }
             }
         } catch (Exception e) {
-            // Ignorer l'exception pour le message
         }
 
         return message.toString();
     }
     
     /**
-     * Masque une partie du numéro de carte
+     * Masque une partie du numéro de carte pour des raisons de sécurité.
+     * Affiche seulement les 4 premiers caractères.
+     * 
+     * @param numeroCarte le numéro de carte complet
+     * @return le numéro de carte masqué
      */
     private String masquerNumeroCarte(String numeroCarte) {
         if (numeroCarte != null && numeroCarte.length() >= 4) {
@@ -498,7 +557,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Prépare le stationnement
+     * Prépare le stationnement après confirmation.
+     * Vérifie à nouveau la carte Tisséo pour les parkings relais avant d'ouvrir la page.
      */
     private void preparerStationnement() {
         etat = EtatResultats.STATIONNEMENT_EN_COURS;
@@ -510,7 +570,6 @@ public class ControleurResultatsRecherche implements ActionListener {
             
             ouvrirPageStationnement();
         } catch (IllegalStateException e) {
-            // Carte Tisséo manquante, retour à l'affichage
             etat = EtatResultats.AFFICHAGE_RESULTATS;
         } catch (Exception e) {
             afficherErreur("Erreur lors du traitement: " + e.getMessage(), TITRE_SYSTEME);
@@ -519,7 +578,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Vérifie la carte Tisséo pour le stationnement (version finale)
+     * Vérifie la carte Tisséo une dernière fois avant le stationnement.
+     * Lance une exception si la carte est absente.
      */
     private void verifierCarteTisseoPourStationnement() {
         String carteTisseo = obtenirCarteTisseoUtilisateur();
@@ -536,7 +596,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Ouvre la page de stationnement
+     * Ouvre la page de stationnement en parking avec le parking sélectionné.
+     * Ferme la page des résultats de recherche.
      */
     private void ouvrirPageStationnement() {
         try {
@@ -552,7 +613,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Retourne à l'accueil
+     * Retourne à la page d'accueil de l'application.
+     * Ferme la page des résultats de recherche.
      */
     private void retourAccueil() {
         etat = EtatResultats.RETOUR_ACCUEIL;
@@ -570,7 +632,8 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Affiche tous les parkings
+     * Affiche la page de tous les parkings disponibles.
+     * Ferme la page des résultats de recherche.
      */
     private void afficherTousParkings() {
         etat = EtatResultats.AFFICHAGE_TOUS_PARKINGS;
@@ -590,13 +653,20 @@ public class ControleurResultatsRecherche implements ActionListener {
     }
     
     /**
-     * Affiche un message d'erreur
+     * Affiche un message d'erreur dans une boîte de dialogue.
+     * 
+     * @param message le message d'erreur
+     * @param titre le titre de la boîte de dialogue
      */
     private void afficherErreur(String message, String titre) {
         JOptionPane.showMessageDialog(vue, message, titre, JOptionPane.ERROR_MESSAGE);
     }
     
-    // Getter pour l'état courant (utile pour les tests)
+    /**
+     * Retourne l'état courant du contrôleur.
+     * 
+     * @return l'état courant
+     */
     public EtatResultats getEtatCourant() {
         return etat;
     }
