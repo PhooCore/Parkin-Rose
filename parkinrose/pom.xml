@@ -6,7 +6,6 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Informations de base du projet -->
     <groupId>com.monentreprise</groupId>
     <artifactId>parkinrose</artifactId>
     <version>1.0.0</version>
@@ -14,35 +13,57 @@
     <name>ParkinRose</name>
     <description>Projet ParkinRose avec MySQL</description>
 
+    <!-- MODIFIEZ POUR JAVA 11 -->
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <dependencies>
+        <!-- Gardez JavaFX 17 mais utilisez Java 11+ -->
         <dependency>
-                  <groupId>com.mysql</groupId>
-                  <artifactId>mysql-connector-j</artifactId>
-                  <version>9.0.0</version>
-            </dependency>
-
-            <dependency>
-                  <groupId>com.oracle.database.jdbc</groupId>
-                  <artifactId>ojdbc11</artifactId>
-                  <version>21.11.0.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-controls</artifactId>
-                <version>17.0.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-web</artifactId>
-                <version>17.0.2</version>
-            </dependency>
-            <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>17.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
+            <version>17.0.2</version>
+        </dependency>
+        <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-swing</artifactId>
             <version>17.0.2</version>
         </dependency>
+        
+        <!-- MySQL - ok pour Java 11 -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>8.0.33</version> <!-- Version plus stable -->
+        </dependency>
+        
+        <!-- Oracle - ok pour Java 11 -->
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc11</artifactId>
+            <version>21.11.0.0</version>
+        </dependency>
     </dependencies>
 
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
